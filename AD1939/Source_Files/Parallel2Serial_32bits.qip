@@ -1,0 +1,1 @@
+set_global_assignment -name QIP_FILE [file join $::quartus(qip_path) "Parallel2Serial_32bits/Parallel2Serial_32bits.qip"]

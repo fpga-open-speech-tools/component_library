@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system name="$${FILENAME}">
+ <component
+   name="$${FILENAME}"
+   displayName="$${FILENAME}"
+   version="1.0"
+   description=""
+   tags="INTERNAL_COMPONENT=true"
+   categories="" />
+ <parameter name="bonusData"><![CDATA[bonusData 
+{
+   element Serial2Parallel_32bits
+   {
+      datum _sortIndex
+      {
+         value = "0";
+         type = "int";
+      }
+   }
+}
+]]></parameter>
+ <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
+ <parameter name="device" value="10AS066H1F34E1SG" />
+ <parameter name="deviceFamily" value="Arria 10" />
+ <parameter name="deviceSpeedGrade" value="1" />
+ <parameter name="fabricMode" value="QSYS" />
+ <parameter name="generateLegacySim" value="false" />
+ <parameter name="generationId" value="0" />
+ <parameter name="globalResetBus" value="false" />
+ <parameter name="hdlLanguage" value="VERILOG" />
+ <parameter name="hideFromIPCatalog" value="true" />
+ <parameter name="lockedInterfaceDefinition" value="" />
+ <parameter name="maxAdditionalLatency" value="1" />
+ <parameter name="projectName" value="" />
+ <parameter name="sopcBorderPoints" value="false" />
+ <parameter name="systemHash" value="0" />
+ <parameter name="testBenchDutName" value="" />
+ <parameter name="timeStamp" value="0" />
+ <parameter name="useTestBenchNamingPattern" value="false" />
+ <instanceScript></instanceScript>
+ <interface
+   name="lpm_shiftreg_input"
+   internal="Serial2Parallel_32bits.lpm_shiftreg_input"
+   type="conduit"
+   dir="end">
+  <port name="clock" internal="clock" />
+  <port name="shiftin" internal="shiftin" />
+ </interface>
+ <interface
+   name="lpm_shiftreg_output"
+   internal="Serial2Parallel_32bits.lpm_shiftreg_output"
+   type="conduit"
+   dir="end">
+  <port name="q" internal="q" />
+ </interface>
+ <module
+   name="Serial2Parallel_32bits"
+   kind="lpm_shiftreg"
+   version="18.0"
+   enabled="1"
+   autoexport="1">
+  <parameter name="DEVICE_FAMILY" value="Arria 10" />
+  <parameter name="GUI_ASET_VALUE" value="0" />
+  <parameter name="GUI_DIRECTION" value="Left" />
+  <parameter name="GUI_SSET_VALUE" value="0" />
+  <parameter name="GUI_USE_ACLR_INPUT" value="false" />
+  <parameter name="GUI_USE_ASET_INPUT" value="false" />
+  <parameter name="GUI_USE_ASET_INPUT_1s" value="false" />
+  <parameter name="GUI_USE_CLKEN_INPUT" value="false" />
+  <parameter name="GUI_USE_DATA_OUTPUT" value="true" />
+  <parameter name="GUI_USE_PARALLEL_INPUT" value="false" />
+  <parameter name="GUI_USE_SCLR_INPUT" value="false" />
+  <parameter name="GUI_USE_SERIAL_INPUT" value="true" />
+  <parameter name="GUI_USE_SERIAL_OUTPUT" value="false" />
+  <parameter name="GUI_USE_SSET_INPUT" value="false" />
+  <parameter name="GUI_USE_SSET_INPUT_1s" value="false" />
+  <parameter name="GUI_WIDTH" value="32" />
+ </module>
+ <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
+ <interconnectRequirement for="$system" name="qsys_mm.enableEccProtection" value="FALSE" />
+ <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="FALSE" />
+ <interconnectRequirement for="$system" name="qsys_mm.maxAdditionalLatency" value="1" />
+</system>

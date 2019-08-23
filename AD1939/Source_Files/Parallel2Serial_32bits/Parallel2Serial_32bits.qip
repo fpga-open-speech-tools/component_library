@@ -1,0 +1,52 @@
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_TOOL_NAME "Qsys"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_TOOL_VERSION "18.0"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_TOOL_ENV "Qsys"
+set_global_assignment -library "Parallel2Serial_32bits" -name SOPCINFO_FILE [file join $::quartus(qip_path) "../Parallel2Serial_32bits.sopcinfo"]
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name SLD_INFO "QSYS_NAME Parallel2Serial_32bits HAS_SOPCINFO 1 GENERATION_ID 1555614294"
+set_global_assignment -library "Parallel2Serial_32bits" -name MISC_FILE [file join $::quartus(qip_path) "Parallel2Serial_32bits.cmp"]
+set_global_assignment -library "Parallel2Serial_32bits" -name SLD_FILE [file join $::quartus(qip_path) "Parallel2Serial_32bits.debuginfo"]
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_TARGETED_DEVICE_FAMILY "Arria 10"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_GENERATED_DEVICE_FAMILY "{Arria 10}"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_QSYS_MODE "STANDALONE"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "Parallel2Serial_32bits" -name MISC_FILE [file join $::quartus(qip_path) "../Parallel2Serial_32bits.qsys"]
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_NAME "UGFyYWxsZWwyU2VyaWFsXzMyYml0cw=="
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_DISPLAY_NAME "UGFyYWxsZWwyU2VyaWFsXzMyYml0cw=="
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_VERSION "MS4w"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_PARAMETER "QVVUT19HRU5FUkFUSU9OX0lE::MTU1NTYxNDI5NA==::QXV0byBHRU5FUkFUSU9OX0lE"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_PARAMETER "QVVUT19ERVZJQ0VfRkFNSUxZ::QXJyaWEgMTA=::QXV0byBERVZJQ0VfRkFNSUxZ"
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_PARAMETER "QVVUT19ERVZJQ0U=::MTBBUzA2NkgxRjM0RTFTRw==::QXV0byBERVZJQ0U="
+set_global_assignment -entity "Parallel2Serial_32bits" -library "Parallel2Serial_32bits" -name IP_COMPONENT_PARAMETER "QVVUT19ERVZJQ0VfU1BFRURHUkFERQ==::MQ==::QXV0byBERVZJQ0VfU1BFRURHUkFERQ=="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_NAME "UGFyYWxsZWwyU2VyaWFsXzMyYml0c19scG1fc2hpZnRyZWdfMTgwX3d4aDRzcGk="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_DISPLAY_NAME "TFBNX1NISUZUUkVH"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_VERSION "MTguMA=="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_DESCRIPTION "bHBtX3NoaWZ0cmVn"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "REVWSUNFX0ZBTUlMWQ==::QXJyaWEgMTA=::RGV2aWNlIGZhbWlseQ=="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1dJRFRI::MzI=::SG93IHdpZGUgc2hvdWxkIHRoZSAncScgb3V0cHV0IGJ1cyBiZT8="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX0RJUkVDVElPTg==::TGVmdA==::V2hpY2ggZGlyZWN0aW9uIGRvIHlvdSB3YW50IHRoZSByZWdpc3RlcnMgdG8gc2hpZnQ/"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9EQVRBX09VVFBVVA==::ZmFsc2U=::RGF0YSBvdXRwdXQ="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9TRVJJQUxfT1VUUFVU::dHJ1ZQ==::U2VyaWFsIHNoaWZ0IGRhdGEgb3V0cHV0"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9DTEtFTl9JTlBVVA==::ZmFsc2U=::Q2xvY2sgZW5hYmxlIGlucHV0"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9TRVJJQUxfSU5QVVQ=::ZmFsc2U=::U2VyaWFsIHNoaWZ0IGRhdGEgaW5wdXQ="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9QQVJBTExFTF9JTlBVVA==::dHJ1ZQ==::UGFyYWxsZWwgZGF0YSBpbnB1dCAobG9hZCk="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9TQ0xSX0lOUFVU::ZmFsc2U=::Q2xlYXI="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9TU0VUX0lOUFVUXzFz::ZmFsc2U=::U2V0IC0gc2V0IHRvIGFsbCAxJ3M="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9TU0VUX0lOUFVU::ZmFsc2U=::U2V0IC0gc2V0IHRvIHZhbHVl"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1NTRVRfVkFMVUU=::MA==::dmFsdWU="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9BQ0xSX0lOUFVU::ZmFsc2U=::Q2xlYXI="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9BU0VUX0lOUFVUXzFz::ZmFsc2U=::U2V0IC0gc2V0IHRvIGFsbCAxJ3M="
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX1VTRV9BU0VUX0lOUFVU::ZmFsc2U=::U2V0IC0gc2V0IHRvIHZhbHVl"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_COMPONENT_PARAMETER "R1VJX0FTRVRfVkFMVUU=::MA==::dmFsdWU="
+
+set_global_assignment -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name VHDL_FILE [file join $::quartus(qip_path) "lpm_shiftreg_180/synth/Parallel2Serial_32bits_pkg.vhd"]
+set_global_assignment -library "Parallel2Serial_32bits" -name VHDL_FILE [file join $::quartus(qip_path) "synth/Parallel2Serial_32bits.vhd"]
+set_global_assignment -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name VERILOG_FILE [file join $::quartus(qip_path) "lpm_shiftreg_180/synth/Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi.v"]
+
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_TOOL_NAME "lpm_shiftreg"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_TOOL_VERSION "18.0"
+set_global_assignment -entity "Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi" -library "Parallel2Serial_32bits_lpm_shiftreg_180" -name IP_TOOL_ENV "Qsys"

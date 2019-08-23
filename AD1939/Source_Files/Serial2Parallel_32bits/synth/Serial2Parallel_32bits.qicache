@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='us-ascii'?>
+<qsys_generation_info>
+<qsys_file path="C:/Users/tyler/Documents/NIHIIRepository/NIH2/Quartus_180/Library/Platform_Designer/AD1939/Source_Files/Serial2Parallel_32bits.qsys" />
+<gen_dir path="C:/Users/tyler/Documents/NIHIIRepository/NIH2/Quartus_180/Library/Platform_Designer/AD1939/Source_Files/Serial2Parallel_32bits/" />
+<user_regen_policy value="Never Regenerate Existing IP" />
+<actual_regen_policy value="Never Regenerate Existing IP" />
+<gen_action value="IP Generation Skipped" />
+<gen_status value="IP Generation Succeeded" />
+</qsys_generation_info>

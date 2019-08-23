@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2019.04.18.13:04:39"
+ outputDirectory="C:/Users/tyler/Documents/NIHIIRepository/NIH2/Quartus_180/Library/Platform_Designer/AD1939/Source_Files/Serial2Parallel_32bits/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Arria 10"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="10AS066H1F34E1SG"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="1"
+     onHdl="0"
+     affectsHdl="1" />
+  <interface name="lpm_shiftreg_input" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="clock" direction="input" role="clock" width="1" />
+   <port name="shiftin" direction="input" role="shiftin" width="1" />
+  </interface>
+  <interface name="lpm_shiftreg_output" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="q" direction="output" role="q" width="32" />
+  </interface>
+ </perimeter>
+ <entity
+   kind="Serial2Parallel_32bits"
+   version="1.0"
+   name="Serial2Parallel_32bits">
+  <parameter name="AUTO_GENERATION_ID" value="1555614279" />
+  <parameter name="AUTO_DEVICE" value="10AS066H1F34E1SG" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Arria 10" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="1" />
+  <generatedFiles>
+   <file
+       path="C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Serial2Parallel_32bits\lpm_shiftreg_180\synth\Serial2Parallel_32bits_pkg.vhd"
+       attributes="IS_CONFIGURATION_PACKAGE" />
+   <file
+       path="C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Serial2Parallel_32bits\synth\Serial2Parallel_32bits.vhd"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Serial2Parallel_32bits\lpm_shiftreg_180\synth\Serial2Parallel_32bits_pkg.vhd"
+       attributes="IS_CONFIGURATION_PACKAGE" />
+   <file
+       path="C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Serial2Parallel_32bits\synth\Serial2Parallel_32bits.vhd"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="C:/Users/tyler/Documents/NIHIIRepository/NIH2/Quartus_180/Library/Platform_Designer/AD1939/Source_Files/Serial2Parallel_32bits.qsys" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="C:/intelfpga/18.0/ip/altera/megafunctions/lpm_shiftreg/lpm_shiftreg_hw.tcl" />
+  </childSourceFiles>
+  <messages>
+   <message level="Info" culprit="Serial2Parallel_32bits">"Generating: Serial2Parallel_32bits"</message>
+   <message level="Info" culprit="Serial2Parallel_32bits">"Generating: Serial2Parallel_32bits_lpm_shiftreg_180_gizevoi"</message>
+   <message level="Info" culprit="Serial2Parallel_32bits">Generating top-level entity Serial2Parallel_32bits_lpm_shiftreg_180_gizevoi.</message>
+  </messages>
+ </entity>
+ <entity
+   kind="lpm_shiftreg"
+   version="18.0"
+   name="Serial2Parallel_32bits_lpm_shiftreg_180_gizevoi">
+  <parameter name="GUI_USE_ASET_INPUT_1s" value="false" />
+  <parameter name="GUI_USE_ACLR_INPUT" value="false" />
+  <parameter name="GUI_USE_SSET_INPUT_1s" value="false" />
+  <parameter name="GUI_ASET_VALUE" value="0" />
+  <parameter name="GUI_USE_DATA_OUTPUT" value="true" />
+  <parameter name="DEVICE_FAMILY" value="Arria 10" />
+  <parameter name="GUI_USE_SCLR_INPUT" value="false" />
+  <parameter name="GUI_WIDTH" value="32" />
+  <parameter name="GUI_USE_CLKEN_INPUT" value="false" />
+  <parameter name="GUI_USE_SERIAL_OUTPUT" value="false" />
+  <parameter name="GUI_USE_ASET_INPUT" value="false" />
+  <parameter name="GUI_USE_SSET_INPUT" value="false" />
+  <parameter name="GUI_USE_PARALLEL_INPUT" value="false" />
+  <parameter name="GUI_USE_SERIAL_INPUT" value="true" />
+  <parameter name="GUI_SSET_VALUE" value="0" />
+  <parameter name="GUI_DIRECTION" value="Left" />
+  <generatedFiles>
+   <file
+       path="C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Serial2Parallel_32bits\lpm_shiftreg_180\synth\Serial2Parallel_32bits_lpm_shiftreg_180_gizevoi.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Serial2Parallel_32bits\lpm_shiftreg_180\synth\Serial2Parallel_32bits_lpm_shiftreg_180_gizevoi.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="C:/intelfpga/18.0/ip/altera/megafunctions/lpm_shiftreg/lpm_shiftreg_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="Serial2Parallel_32bits" as="Serial2Parallel_32bits" />
+  <messages>
+   <message level="Info" culprit="Serial2Parallel_32bits">"Generating: Serial2Parallel_32bits_lpm_shiftreg_180_gizevoi"</message>
+   <message level="Info" culprit="Serial2Parallel_32bits">Generating top-level entity Serial2Parallel_32bits_lpm_shiftreg_180_gizevoi.</message>
+  </messages>
+ </entity>
+</deploy>

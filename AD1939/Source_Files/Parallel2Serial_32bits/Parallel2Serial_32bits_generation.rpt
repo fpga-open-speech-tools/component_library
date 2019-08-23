@@ -1,0 +1,26 @@
+Info: Starting: Create HDL design files for synthesis
+Info: qsys-generate C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Parallel2Serial_32bits.qsys --synthesis=VHDL --output-directory=C:\Users\tyler\Documents\NIHIIRepository\NIH2\Quartus_180\Library\Platform_Designer\AD1939\Source_Files\Parallel2Serial_32bits --family="Arria 10" --part=10AS066H1F34E1SG
+Progress: Loading Source_Files/Parallel2Serial_32bits.qsys
+Progress: Reading input file
+Progress: Adding Parallel2Serial_32bits [lpm_shiftreg 18.0]
+Progress: Parameterizing module Parallel2Serial_32bits
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+: Parallel2Serial_32bits.Parallel2Serial_32bits: Targeting device family: Arria 10.
+Info: Parallel2Serial_32bits: "Transforming system: Parallel2Serial_32bits"
+Info: Parallel2Serial_32bits: Running transform generation_view_transform
+Info: Parallel2Serial_32bits: Running transform generation_view_transform took 0.000s
+Info: Parallel2Serial_32bits: Running transform generation_view_transform
+Info: Parallel2Serial_32bits: Running transform generation_view_transform took 0.000s
+Info: Parallel2Serial_32bits: Running transform merlin_avalon_transform
+Info: Parallel2Serial_32bits: Running transform merlin_avalon_transform took 0.039s
+Info: Parallel2Serial_32bits: "Naming system components in system: Parallel2Serial_32bits"
+Info: Parallel2Serial_32bits: "Processing generation queue"
+Info: Parallel2Serial_32bits: "Generating: Parallel2Serial_32bits"
+Info: Parallel2Serial_32bits: "Generating: Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi"
+Info: Parallel2Serial_32bits: Generating top-level entity Parallel2Serial_32bits_lpm_shiftreg_180_wxh4spi.
+Info: Parallel2Serial_32bits: Done "Parallel2Serial_32bits" with 2 modules, 3 files
+Info: qsys-generate succeeded.
+Info: Finished: Create HDL design files for synthesis

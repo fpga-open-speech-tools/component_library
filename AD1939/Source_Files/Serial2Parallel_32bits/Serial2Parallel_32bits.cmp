@@ -1,0 +1,8 @@
+	component Serial2Parallel_32bits is
+		port (
+			clock   : in  std_logic                     := 'X'; -- clock
+			shiftin : in  std_logic                     := 'X'; -- shiftin
+			q       : out std_logic_vector(31 downto 0)         -- q
+		);
+	end component Serial2Parallel_32bits;
+
