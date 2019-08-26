@@ -1,0 +1,5 @@
+snd-soc-opencores-i2s-objs := opencores_i2s.o
+obj-m += snd-soc-opencores-i2s.o
+
+snd-soc-de10-nano-soc-ad193x-objs := de10_nano_AD193x.o
+obj-m += snd-soc-de10-nano-soc-ad193x.o

@@ -1,0 +1,1 @@
+obj-m := FE_PGA2505.o
