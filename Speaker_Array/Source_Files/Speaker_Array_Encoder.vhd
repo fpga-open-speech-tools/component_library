@@ -26,16 +26,31 @@ entity Speaker_Array_Encoder is
         serial_control     : out std_logic;                                        -- serial_control.serial_control
         clk_out            : out std_logic                                         --     packet_clk.clk_out
     );
+    
 end entity Speaker_Array_Encoder;
 
 architecture rtl of Speaker_Array_Encoder is
+    
+--------------------------------------------------------------
+-- Intel/Altera component to convert parallel data to serial
+--------------------------------------------------------------
+component Parallel2Serial_32bits
+    PORT
+    (
+        clock           : IN STD_LOGIC ;
+        data            : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+        load            : IN STD_LOGIC ;
+        shiftout        : OUT STD_LOGIC 
+    );
+end component;
+    
 begin
 
 
+
+
     serial_data_out <= '0';
-
     serial_control <= '0';
-
     clk_out <= '0';
 
 end architecture rtl;
