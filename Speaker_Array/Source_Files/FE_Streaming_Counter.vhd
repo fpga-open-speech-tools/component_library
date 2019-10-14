@@ -156,7 +156,7 @@ begin
       when pass_data =>
       
         -- Load the data into the output register
-        data_r      <= data_counter;
+        data_r      <= "1111" & data_counter(23 downto 0) & "0000";
         
         -- Load the channel into the output register
         channel_r   <= std_logic_vector(channel_counter);
