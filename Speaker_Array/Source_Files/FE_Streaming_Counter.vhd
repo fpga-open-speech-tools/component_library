@@ -36,6 +36,7 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity FE_Streaming_Counter is
+    generic ( n_channels : unsigned(6 downto 0) := "1000000" );
     port (
         sys_clk             : in  std_logic                     := '0';
         reset_n             : in  std_logic                     := '0';
@@ -50,7 +51,6 @@ end entity FE_Streaming_Counter;
 
 architecture rtl of FE_Streaming_Counter is
  
-signal n_channels     : unsigned(6 downto 0)  := "0000010";                           -- Number of channels to use
 signal delay_value    : unsigned(31 downto 0) := "00000010111011100000000000000000";  -- Time between data transfers
 
 signal transmit_data  : std_logic := '0';
