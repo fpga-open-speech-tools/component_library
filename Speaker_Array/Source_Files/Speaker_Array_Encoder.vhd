@@ -74,7 +74,7 @@ end component;
 --------------------------------------------------------------
 -- Altera DPR
 --------------------------------------------------------------
-component Encoder_DPR is
+component Array_DPR is
 	port
 	(
 		clock		: in std_logic  := '1';
@@ -121,7 +121,7 @@ signal output_state : state_type;
 begin 
 
 -- Map the DPR
-encoder_buffer : Encoder_DPR
+encoder_buffer : Array_DPR
 port map (
   clock => sys_clk,
   data => input_data_r,

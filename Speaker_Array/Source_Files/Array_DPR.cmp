@@ -13,7 +13,7 @@
 --refer to the applicable agreement for further details.
 
 
-component Encoder_DPR
+component Array_DPR
 	PORT
 	(
 		clock		: IN STD_LOGIC  := '1';

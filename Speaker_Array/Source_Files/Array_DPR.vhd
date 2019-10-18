@@ -4,7 +4,7 @@
 -- MODULE: altsyncram 
 
 -- ============================================================
--- File Name: Encoder_DPR.vhd
+-- File Name: Array_DPR.vhd
 -- Megafunction Name(s):
 -- 			altsyncram
 --
@@ -39,7 +39,7 @@ USE ieee.std_logic_1164.all;
 LIBRARY altera_mf;
 USE altera_mf.altera_mf_components.all;
 
-ENTITY Encoder_DPR IS
+ENTITY Array_DPR IS
 	PORT
 	(
 		clock		: IN STD_LOGIC  := '1';
@@ -50,10 +50,10 @@ ENTITY Encoder_DPR IS
 		wren		: IN STD_LOGIC  := '0';
 		q		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
 	);
-END Encoder_DPR;
+END Array_DPR;
 
 
-ARCHITECTURE SYN OF encoder_dpr IS
+ARCHITECTURE SYN OF array_dpr IS
 
 	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (31 DOWNTO 0);
 
@@ -194,9 +194,9 @@ END SYN;
 -- Retrieval info: CONNECT: @rden_b 0 0 0 0 rden 0 0 0 0
 -- Retrieval info: CONNECT: @wren_a 0 0 0 0 wren 0 0 0 0
 -- Retrieval info: CONNECT: q 0 0 32 0 @q_b 0 0 32 0
--- Retrieval info: GEN_FILE: TYPE_NORMAL Encoder_DPR.vhd TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL Encoder_DPR.inc FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL Encoder_DPR.cmp TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL Encoder_DPR.bsf FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL Encoder_DPR_inst.vhd FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL Array_DPR.vhd TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL Array_DPR.inc FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL Array_DPR.cmp TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL Array_DPR.bsf FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL Array_DPR_inst.vhd FALSE
 -- Retrieval info: LIB_FILE: altera_mf
