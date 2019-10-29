@@ -88,7 +88,7 @@ component Array_DPR is
 end component;
 
 -- TODO tie this signal with the M-Map interface component
-signal n_speakers     : unsigned(6 downto 0) := "0000010";
+signal n_drivers     : unsigned(6 downto 0) := "0000010";
 
 -- Control signals
 signal start_shifting : std_logic := '0';
@@ -235,7 +235,7 @@ begin
         
           -- If the number of packets is equal to the number of speakers
           -- move the finish state
-          if packet_counter = n_speakers then 
+          if packet_counter = n_drivers then 
             output_state <= shift_finish;
             
           -- Otherwise, read the next data byte
@@ -272,8 +272,8 @@ begin
       
       when shift_header =>
         -- Load the data header into the shift register and reset the read address
-        --                |------||------||------| --> 25 bits remaining
-        shift_data_in <= "0000000000000000000000000" & std_logic_vector(n_speakers); --TODO: Add more to header packet?
+        --                |------||------||------| --> 9 bits remaining (header: 0xC9FA)
+        shift_data_in <= "1100100111111010000000000" & std_logic_vector(n_drivers);
         shift_en_n <= '0';
         read_address <= (others => '0');
       
