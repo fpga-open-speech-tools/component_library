@@ -87,7 +87,7 @@ end component;
 component FE_I2S_M10K
   generic (
     bclk_div    : unsigned(7 downto 0)  := "00000100";
-    lrclk_div   : unsigned(7 downto 0)  := "00010000";
+    lrclk_div   : unsigned(7 downto 0)  := "00100000";
     n_drivers   : unsigned(7 downto 0)  := "00000010";
     max_drivers : integer  := 32;
     read_ahead  : integer  := 1
@@ -150,6 +150,7 @@ signal packet_counter   : unsigned(7 downto 0) := (others => '0');
 signal driver_counter   : unsigned(7 downto 0) := (others => '0');
 signal read_counter     : unsigned(7 downto 0) := (others => '0');
 signal transfer_data    : std_logic := '0';
+signal read_packets     : std_logic := '0';
 signal last_packet      : std_logic := '0';
 signal data_ready       : std_logic := '0';
 signal read_all         : std_logic := '0';
@@ -171,11 +172,11 @@ signal output_state : state_type;
 
 begin 
 
-S2P_ADC2 : Serial2Parallel_32bits PORT MAP (
-  clock           => serial_clk,
-  shiftin         => serial_data,
-  q               => parallel_data_r
-);
+-- S2P_ADC2 : Serial2Parallel_32bits PORT MAP (
+  -- clock           => serial_clk,
+  -- shiftin         => serial_data,
+  -- q               => parallel_data_r
+-- );
 
 decoder_buffer: M10K_Buffer 
 	port map
@@ -215,14 +216,14 @@ begin
   elsif rising_edge(serial_clk) then 
     case deser_state is 
       when read_header =>
-        if header_found = '1' then 
+        if read_packets = '1' and data_ready = '1' then 
           deser_state <= read_packet;
         else
           deser_state <= read_header;
         end if;
         
       when read_packet =>
-        if valid_data = '1' and last_packet = '1' then 
+        if last_packet = '1' then 
           deser_state <= read_header;
         else
           deser_state <= read_packet;
@@ -231,6 +232,15 @@ begin
       when others =>
       
       end case;
+  end if;
+end process;
+
+shift_process: process(serial_clk,reset_n)
+begin
+  if reset_n = '0' then 
+    parallel_data_r <= (others => '0');
+  elsif rising_edge(serial_clk) then 
+      parallel_data_r <= parallel_data_r(30 downto 0) & serial_data;
   end if;
 end process;
 
@@ -243,19 +253,21 @@ begin
       when read_header =>
         last_packet <= '0';
         data_ready    <= '1';
-        if parallel_data_r(31 downto 16) = HEADER_ID then 
-          header_found <= '1';
+        if parallel_data_r(31 downto 16) = HEADER_ID(15 downto 0) then 
+          read_packets <= '1';
           n_drivers <= unsigned(parallel_data_r(7 downto 0));
         else
-          header_found <= '0';
+          read_packets <= '0';
         end if;
         
       when read_packet => 
-        data_ready <= '0';
-        if packet_counter = n_drivers - 2 then 
+        data_ready    <= '0';
+        if packet_counter = n_drivers then 
           last_packet <= '1';
+          header_found <= '0';
         else
-          last_packet <= '0';
+          last_packet <= last_packet;
+          header_found <= '1';
         end if;
       
       when others =>
@@ -269,7 +281,8 @@ begin
     load_counter <= (others => '0');
   elsif rising_edge(serial_clk) then 
     if header_found = '0' then 
-      load_counter <= (others => '0');
+      -- The state transitions occurs after several bits have already been transferred (Three in this case)
+      load_counter <= "00000010";--(others => '0');
       packet_counter <= (others => '0');
       valid_r <= '0';
     elsif header_found = '1' and load_counter = 31 then
@@ -278,6 +291,9 @@ begin
       input_data_r <= parallel_data_r;
       write_address <= std_logic_vector(packet_counter(6 downto 0));
       valid_r <= '1';
+    -- elsif header_found = '1' and load_counter = 31 then
+      -- load_counter <= (others => '0');
+      -- valid_r <= '0';
     elsif header_found = '1' and load_counter < 31 then 
       load_counter <= load_counter + 1;
       valid_r <= '0';

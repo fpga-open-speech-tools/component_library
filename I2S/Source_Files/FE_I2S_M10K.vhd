@@ -190,7 +190,7 @@ begin
   elsif rising_edge(bclk_r) then 
   
     -- If the lr clock counter reached the divisor, reset it and change the bit clock signal
-    if lrclk_counter = lrclk_div then 
+    if lrclk_counter = lrclk_div - 1 then 
       lrclk_r <= not lrclk_r;
       lrclk_counter <= (others => '0');
       
@@ -364,20 +364,20 @@ load_shift_generate: for shift_ind in max_drivers - 1 downto 0 generate
   );
 end generate;
 
--- Delay the data by a single bitclock
-follower_process : process(bclk_r)
-begin 
-  if rising_edge(bclk_r) then 
-    sdata_follower_r <= sdata_array_r;
-  end if;
-end process;
+-- -- Delay the data by a single bitclock
+-- follower_process : process(bclk_r)
+-- begin 
+  -- if rising_edge(bclk_r) then 
+    -- sdata_follower_r <= sdata_array_r;
+  -- end if;
+-- end process;
 
 -- Map the signals to the output ports
 bclk_out  <= bclk_r;
 lrclk_out <= lrclk_r;
 
 serial_output_generate: for out_ind in max_drivers - 1 downto 0  generate
-    sdata_out(out_ind) <= sdata_follower_r(out_ind)(to_integer(lrclk_div - 1));
+    sdata_out(out_ind) <= sdata_array_r(out_ind)(to_integer(lrclk_div - 1));
 end generate;
 
 end architecture rtl;

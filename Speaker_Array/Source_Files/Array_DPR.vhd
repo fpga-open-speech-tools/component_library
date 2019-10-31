@@ -42,11 +42,12 @@ USE altera_mf.altera_mf_components.all;
 ENTITY Array_DPR IS
 	PORT
 	(
-		clock		: IN STD_LOGIC  := '1';
 		data		: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
 		rdaddress		: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
+		rdclock		: IN STD_LOGIC ;
 		rden		: IN STD_LOGIC  := '1';
 		wraddress		: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
+		wrclock		: IN STD_LOGIC  := '1';
 		wren		: IN STD_LOGIC  := '0';
 		q		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
 	);
@@ -63,7 +64,7 @@ BEGIN
 	altsyncram_component : altsyncram
 	GENERIC MAP (
 		address_aclr_b => "NONE",
-		address_reg_b => "CLOCK0",
+		address_reg_b => "CLOCK1",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_input_b => "BYPASS",
 		clock_enable_output_b => "BYPASS",
@@ -73,10 +74,9 @@ BEGIN
 		numwords_b => 64,
 		operation_mode => "DUAL_PORT",
 		outdata_aclr_b => "NONE",
-		outdata_reg_b => "CLOCK0",
+		outdata_reg_b => "CLOCK1",
 		power_up_uninitialized => "FALSE",
-		rdcontrol_reg_b => "CLOCK0",
-		read_during_write_mode_mixed_ports => "DONT_CARE",
+		rdcontrol_reg_b => "CLOCK1",
 		widthad_a => 6,
 		widthad_b => 6,
 		width_a => 32,
@@ -86,7 +86,8 @@ BEGIN
 	PORT MAP (
 		address_a => wraddress,
 		address_b => rdaddress,
-		clock0 => clock,
+		clock0 => wrclock,
+		clock1 => rdclock,
 		data_a => data,
 		rden_b => rden,
 		wren_a => wren,
@@ -118,7 +119,7 @@ END SYN;
 -- Retrieval info: PRIVATE: CLRrren NUMERIC "0"
 -- Retrieval info: PRIVATE: CLRwraddress NUMERIC "0"
 -- Retrieval info: PRIVATE: CLRwren NUMERIC "0"
--- Retrieval info: PRIVATE: Clock NUMERIC "0"
+-- Retrieval info: PRIVATE: Clock NUMERIC "1"
 -- Retrieval info: PRIVATE: Clock_A NUMERIC "0"
 -- Retrieval info: PRIVATE: Clock_B NUMERIC "0"
 -- Retrieval info: PRIVATE: IMPLEMENT_IN_LES NUMERIC "0"
@@ -161,7 +162,7 @@ END SYN;
 -- Retrieval info: PRIVATE: rden NUMERIC "1"
 -- Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 -- Retrieval info: CONSTANT: ADDRESS_ACLR_B STRING "NONE"
--- Retrieval info: CONSTANT: ADDRESS_REG_B STRING "CLOCK0"
+-- Retrieval info: CONSTANT: ADDRESS_REG_B STRING "CLOCK1"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_A STRING "BYPASS"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_B STRING "BYPASS"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_B STRING "BYPASS"
@@ -171,25 +172,26 @@ END SYN;
 -- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "64"
 -- Retrieval info: CONSTANT: OPERATION_MODE STRING "DUAL_PORT"
 -- Retrieval info: CONSTANT: OUTDATA_ACLR_B STRING "NONE"
--- Retrieval info: CONSTANT: OUTDATA_REG_B STRING "CLOCK0"
+-- Retrieval info: CONSTANT: OUTDATA_REG_B STRING "CLOCK1"
 -- Retrieval info: CONSTANT: POWER_UP_UNINITIALIZED STRING "FALSE"
--- Retrieval info: CONSTANT: RDCONTROL_REG_B STRING "CLOCK0"
--- Retrieval info: CONSTANT: READ_DURING_WRITE_MODE_MIXED_PORTS STRING "DONT_CARE"
+-- Retrieval info: CONSTANT: RDCONTROL_REG_B STRING "CLOCK1"
 -- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "6"
 -- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "6"
 -- Retrieval info: CONSTANT: WIDTH_A NUMERIC "32"
 -- Retrieval info: CONSTANT: WIDTH_B NUMERIC "32"
 -- Retrieval info: CONSTANT: WIDTH_BYTEENA_A NUMERIC "1"
--- Retrieval info: USED_PORT: clock 0 0 0 0 INPUT VCC "clock"
 -- Retrieval info: USED_PORT: data 0 0 32 0 INPUT NODEFVAL "data[31..0]"
 -- Retrieval info: USED_PORT: q 0 0 32 0 OUTPUT NODEFVAL "q[31..0]"
 -- Retrieval info: USED_PORT: rdaddress 0 0 6 0 INPUT NODEFVAL "rdaddress[5..0]"
+-- Retrieval info: USED_PORT: rdclock 0 0 0 0 INPUT NODEFVAL "rdclock"
 -- Retrieval info: USED_PORT: rden 0 0 0 0 INPUT VCC "rden"
 -- Retrieval info: USED_PORT: wraddress 0 0 6 0 INPUT NODEFVAL "wraddress[5..0]"
+-- Retrieval info: USED_PORT: wrclock 0 0 0 0 INPUT VCC "wrclock"
 -- Retrieval info: USED_PORT: wren 0 0 0 0 INPUT GND "wren"
 -- Retrieval info: CONNECT: @address_a 0 0 6 0 wraddress 0 0 6 0
 -- Retrieval info: CONNECT: @address_b 0 0 6 0 rdaddress 0 0 6 0
--- Retrieval info: CONNECT: @clock0 0 0 0 0 clock 0 0 0 0
+-- Retrieval info: CONNECT: @clock0 0 0 0 0 wrclock 0 0 0 0
+-- Retrieval info: CONNECT: @clock1 0 0 0 0 rdclock 0 0 0 0
 -- Retrieval info: CONNECT: @data_a 0 0 32 0 data 0 0 32 0
 -- Retrieval info: CONNECT: @rden_b 0 0 0 0 rden 0 0 0 0
 -- Retrieval info: CONNECT: @wren_a 0 0 0 0 wren 0 0 0 0

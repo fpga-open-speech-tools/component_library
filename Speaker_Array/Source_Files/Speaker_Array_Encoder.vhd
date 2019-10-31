@@ -39,6 +39,7 @@ use IEEE.numeric_std.all;
 entity Speaker_Array_Encoder is
     port (
         sys_clk             : in  std_logic                     := '0';
+        serial_clk_in       : in  std_logic                     := '0';
         reset_n             : in  std_logic                     := '0';
         
         data_input_channel  : in  std_logic_vector(6 downto 0)  := (others => '0');
@@ -57,6 +58,17 @@ entity Speaker_Array_Encoder is
 end entity Speaker_Array_Encoder;
 
 architecture rtl of Speaker_Array_Encoder is
+
+-- Instantiate the component that shifts the data
+component Gen_Shift_Container
+  port (
+  clk         : in  std_logic;
+  input_data  : in  std_logic_vector(31 downto 0);
+  output_data : out std_logic_vector(31 downto 0);
+  load        : in  std_logic
+  );
+end component;
+
     
 --------------------------------------------------------------
 -- Altera component to convert parallel data to serial
@@ -77,7 +89,8 @@ end component;
 component Array_DPR is
 	port
 	(
-		clock		: in std_logic  := '1';
+		wrclock		: in std_logic  := '1';
+		rdclock		: in std_logic  := '1';
 		data		: in std_logic_vector (31 downto 0);
 		rdaddress		: in std_logic_vector (5 downto 0);
 		rden		: in std_logic  := '1';
@@ -88,7 +101,7 @@ component Array_DPR is
 end component;
 
 -- TODO tie this signal with the M-Map interface component
-signal n_drivers     : unsigned(6 downto 0) := "0000010";
+signal n_drivers     : unsigned(6 downto 0) := "0000100";
 
 -- Control signals
 signal start_shifting : std_logic := '0';
@@ -103,19 +116,22 @@ signal write_address  : std_logic_vector(5 downto 0) := (others => '0');
 signal input_data_r   : std_logic_vector(31 downto 0) := (others => '0');
 signal output_data_r  : std_logic_vector(31 downto 0) := (others => '0');
 signal shift_data_in  : std_logic_vector(31 downto 0) := (others => '0'); 
+signal shift_data_out : std_logic_vector(31 downto 0) := (others => '0'); 
 
 -- Shifter signals
 signal shift_out      : std_logic;
-signal shift_en_n       : std_logic := '0';
+signal shift_en_n     : std_logic := '0';
+signal load_data      : std_logic := '0';
 
 -- Shifter state machine signals
 signal header_sent    : std_logic := '0';
 signal final_packet   : std_logic := '0';
 signal bit_counter    : unsigned(4 downto 0) := (others => '0');
+signal extra_clocks   : unsigned(4 downto 0) := "00010";
 signal packet_counter : unsigned(6 downto 0) := (others => '0');
 
 -- Create states for the output state machine
-type state_type is (idle,shift_header,shift_wait,shift_data,read_data,increment_read_address,shift_finish); 
+type state_type is (idle,shift_header,shift_wait,shift_data,read_data,increment_read_address,shift_finish,disable_clock); 
 signal output_state : state_type;
 
 begin 
@@ -123,7 +139,8 @@ begin
 -- Map the DPR
 encoder_buffer : Array_DPR
 port map (
-  clock => sys_clk,
+  wrclock => sys_clk,
+  rdclock => serial_clk_in,
   data => input_data_r,
   rdaddress => read_address,
   rden => rden,
@@ -132,14 +149,23 @@ port map (
   q => output_data_r
 );
 
--- Map the serializer
-serial_data : Parallel2Serial_32bits
-port map (
-  clock => sys_clk,
-  data => shift_data_in,
-  load => shift_en_n,
-  shiftout => shift_out
+-- -- Map the serializer
+-- serial_data : Parallel2Serial_32bits
+-- port map (
+  -- clock => sys_clk,
+  -- data => shift_data_in,
+  -- load => shift_en_n,
+  -- shiftout => shift_out
+-- );
+
+serial_shift_map: Gen_Shift_Container
+port map (  
+  clk => serial_clk_in,
+  input_data  => shift_data_in,
+  output_data => shift_data_out,
+  load => load_data
 );
+
 
 -- Process to push the data into the FIFO
 data_in_process : process(sys_clk,reset_n)
@@ -170,12 +196,12 @@ begin
 end process;
 
 -- Process to start the bit shifting 
-shift_start_process : process(sys_clk,reset_n)
+shift_start_process : process(serial_clk_in,reset_n)
 begin 
   if reset_n = '0' then 
     start_shifting <= '0';
     shift_busy <= '0';
-  elsif rising_edge(sys_clk) then 
+  elsif rising_edge(serial_clk_in) then 
   
     -- When the first data packet is recieved, start shifting the header out
     if write_address(5 downto 0) = "000000" then -- Note: SignalTap seems to mess with the comparison...
@@ -198,11 +224,11 @@ begin
 end process;
 
 -- Process to control the states of the data shifting process
-data_out_control_process : process(sys_clk,reset_n)
+data_out_control_process : process(serial_clk_in,reset_n)
 begin
   if reset_n = '0' then 
     output_state <= idle;
-  elsif rising_edge(sys_clk) then 
+  elsif rising_edge(serial_clk_in) then 
   
     case output_state is 
     
@@ -248,7 +274,14 @@ begin
         output_state <= shift_data;
       
       when shift_finish =>
-        output_state <= idle;
+          output_state <= disable_clock;
+        
+      when disable_clock =>
+        if bit_counter = extra_clocks then 
+          output_state <= idle;
+        else
+          output_state <= disable_clock;
+        end if;
       
       when others => 
         output_state <= idle;
@@ -258,24 +291,24 @@ begin
   end if;
 end process;
 
-data_out_process : process(sys_clk,reset_n)
+data_out_process : process(serial_clk_in,reset_n)
 begin
   if reset_n = '0' then 
     end_shifting  <= '0';
-  elsif rising_edge(sys_clk) then 
+  elsif rising_edge(serial_clk_in) then 
     case output_state is 
       when idle => 
-      
         -- Reset the end_shifting signal and the bit counter
         end_shifting  <= '0';
         bit_counter   <= (others => '0');
       
       when shift_header =>
         -- Load the data header into the shift register and reset the read address
-        --                |------||------||------| --> 9 bits remaining (header: 0xC9FA)
+        --                |------||------||------| --> 9 bits remaining (header id: 0xC9FA)
         shift_data_in <= "1100100111111010000000000" & std_logic_vector(n_drivers);
-        shift_en_n <= '0';
+        shift_en_n <= '1';
         read_address <= (others => '0');
+        load_data <= '1';
       
       when shift_data =>
       
@@ -287,22 +320,28 @@ begin
         
         -- Disable the read enable and disable the shift register
         rden <= '0';
-        shift_en_n <= '1';
+        -- shift_en_n <= '1';
+        load_data <= '1';
         
       when increment_read_address =>
         -- Disable the read enable 
         rden <= '0';
         
         -- Increment the read address
-        read_address <= std_logic_vector(unsigned(read_address) + 1);
+        read_address  <= std_logic_vector(unsigned(read_address) + 1);
+        bit_counter   <= bit_counter + 1;
         
         -- Start the shifting process
         shift_en_n <= '0';
+        load_data <= '0';
+        
       
       when shift_wait =>
         
-        -- Increment the bit counter
+        -- Increment the bit counter and make sure the data is shifting
         bit_counter <= bit_counter + 1;
+        shift_en_n  <= '0'; 
+        load_data <= '0';
       
       when read_data =>
       
@@ -312,14 +351,23 @@ begin
       
       when shift_finish =>
       
-        -- Assert te end shifting signal
+        -- Assert the end shifting signal
         end_shifting <= '1';
+                
+        -- Reset the bit and packet counters
+        packet_counter  <= (others => '0');
+        bit_counter     <= (others => '0');
         
-        -- Disable the shift enable 
-        shift_en_n <= '1';
-        
-        -- Reset the packet counter
-        packet_counter <= (others => '0');
+      -- Wait one more clock cycle before disabling the clock
+      when disable_clock =>
+      
+        -- Disable the serial clock
+        if bit_counter = extra_clocks then 
+          shift_en_n <= '1';
+        else
+          bit_counter <= bit_counter + 1;
+          shift_en_n <= '0';
+        end if;
       
       when others => 
     
@@ -329,9 +377,9 @@ end process;
 
 
 -- Map the RJ45 signals to the output ports
-serial_data_out <= shift_out;
-clk_out <= sys_clk and not shift_en_n;
-serial_control <= '0'; -- TODO: add control components
+serial_data_out <= shift_data_out(31);
+clk_out         <= serial_clk_in and not shift_en_n;
+serial_control  <= '0'; -- TODO: add control components
 
 end architecture rtl;
 
