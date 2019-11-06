@@ -40,7 +40,7 @@ entity FE_I2S_M10K is
   generic (
     bclk_div    : unsigned(7 downto 0)  := "00000100";
     lrclk_div   : unsigned(7 downto 0)  := "00010000";
-    n_drivers   : unsigned(7 downto 0)  := "00000010";
+    n_drivers   : unsigned(7 downto 0)  := "00100000";
     max_drivers : integer  := 32;
     read_ahead  : integer  := 1
   );
@@ -172,7 +172,7 @@ begin
   elsif rising_edge(mclk_in) then 
   
     -- If the bitclock counter reached the divisor, reset it and change the bit clock signal
-    if bclk_counter = bclk_div then 
+    if bclk_counter = bclk_div - 1 then 
       bclk_counter  <= (others => '0');
       bclk_r        <= not bclk_r;
       
@@ -187,7 +187,7 @@ lrclk_process : process(bclk_r,reset_n)
 begin 
   if reset_n = '0' then 
     lrclk_r <= '0';
-  elsif rising_edge(bclk_r) then 
+  elsif falling_edge(bclk_r) then 
   
     -- If the lr clock counter reached the divisor, reset it and change the bit clock signal
     if lrclk_counter = lrclk_div - 1 then 
@@ -268,7 +268,7 @@ begin
       
         -- For compatibility, the left and right channels are the even and odd channels, respectively,
         -- so when either the last even or the last odd channel is read then move to the read finish state
-        if read_counter = 2*n_drivers - 1 or read_counter = 2*n_drivers - 2 then 
+        if read_counter = 2*n_drivers - 2 then 
           output_state <= read_finish;
           
         -- Otherwise keep reading the data out
@@ -305,8 +305,8 @@ begin
       
        when increment_read_address => 
         -- Increment the channel read counter by two and the driver counter by one
-        read_counter <= read_counter + 2;
-        driver_counter <= driver_counter + 1;
+        read_counter    <= read_counter + 2;
+        driver_counter  <= driver_counter + 1;
 
       when read_data =>
         -- Enable the read
@@ -321,7 +321,12 @@ begin
         
       when reg_data => -- Merge this with the read_data state?
         -- Register the data and flip the read enable signal
-        data_array_r(to_integer(driver_counter)) <= output_data_r; 
+        -- data_array_r(to_integer(driver_counter)) <= output_data_r; 
+        if output_data_r(31) = '1' then 
+          data_array_r(to_integer(driver_counter)) <= "11" & output_data_r(29 downto 0);
+        else
+          data_array_r(to_integer(driver_counter)) <= "00" & output_data_r(29 downto 0);
+        end if;
         rden <= '0';
         
       when read_finish =>
@@ -338,7 +343,7 @@ sdata_process : process(bclk_r,reset_n)
 begin 
   if reset_n = '0' then 
 
-  elsif rising_edge(bclk_r) then 
+  elsif falling_edge(bclk_r) then 
   
     -- On the last bitclock before the LR clock changes, load the new data
     if lrclk_counter = lrclk_div - 1 then 
@@ -357,7 +362,7 @@ end process;
 
 load_shift_generate: for shift_ind in max_drivers - 1 downto 0 generate
   serial_shift_map: Gen_Shift_Container
-  port map (  clk => bclk_r,
+  port map (  clk => not bclk_r,
               input_data  => data_array_r(shift_ind),
               output_data => sdata_array_r(shift_ind),
               load => load_data

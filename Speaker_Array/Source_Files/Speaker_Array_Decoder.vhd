@@ -86,11 +86,11 @@ end component;
 
 component FE_I2S_M10K
   generic (
-    bclk_div    : unsigned(7 downto 0)  := "00000100";
+    bclk_div    : unsigned(7 downto 0)  := "00000010";
     lrclk_div   : unsigned(7 downto 0)  := "00100000";
-    n_drivers   : unsigned(7 downto 0)  := "00000010";
+    n_drivers   : unsigned(7 downto 0)  := "00100000";
     max_drivers : integer  := 32;
-    read_ahead  : integer  := 1
+    read_ahead  : integer  := 20
   ); 
   port (
     mclk_in             : in std_logic                      := '0';
@@ -109,7 +109,6 @@ component FE_I2S_M10K
 end component;
 
 -- I2S signals
-signal data_input_r     : std_logic_vector(31 downto 0) := (others => '0');
 signal data_channel_r   : std_logic_vector(6 downto 0) := (others => '0');
 signal valid_r          : std_logic := '0';
 signal bclk_r           : std_logic := '0'; 
@@ -118,7 +117,7 @@ signal sdata_out_r      : std_logic_vector(max_drivers - 1 downto 0) := (others 
 
 -- TODO tie this signal with the M-Map interface component
 signal HEADER_ID      : std_logic_vector(15 downto 0) := "1100100111111010"; -- Hard coded to match encoder
-signal n_drivers      : unsigned(7 downto 0) := (others => '0');
+signal n_drivers      : unsigned(7 downto 0)          := (others => '0');
 
 -- Deserializer control signals
 signal load_counter     : unsigned(7 downto 0) := (others => '0');
@@ -131,11 +130,12 @@ signal header_found     : std_logic := '0';
 signal wren                   : std_logic := '0';
 signal rden                   : std_logic := '0';
 signal rden_follower          : std_logic := '0';
-signal read_address           : std_logic_vector(6 downto 0) := (others => '0');
-signal read_address_follower  : std_logic_vector(6 downto 0) := (others => '0');
-signal write_address          : std_logic_vector(6 downto 0) := (others => '0');
+signal read_address           : std_logic_vector(6 downto 0)  := (others => '0');
+signal read_address_follower  : std_logic_vector(6 downto 0)  := (others => '0');
+signal write_address          : std_logic_vector(6 downto 0)  := (others => '0');
 signal input_data_r           : std_logic_vector(31 downto 0) := (others => '0');
 signal output_data_r          : std_logic_vector(31 downto 0) := (others => '0');
+signal output_data_follower_r : std_logic_vector(31 downto 0) := (others => '0');
 signal data_in                : std_logic_vector(31 downto 0) := (others => '0'); 
 
 
@@ -143,32 +143,30 @@ signal data_in                : std_logic_vector(31 downto 0) := (others => '0')
 signal parallel_data_r : std_logic_vector(31 downto 0) := (others => '0');
 
 -- Shifter state machine signals
-signal header_recieved  : std_logic := '0';
-signal final_packet     : std_logic := '0';
-signal bit_counter      : unsigned(4 downto 0) := (others => '0');
-signal packet_counter   : unsigned(7 downto 0) := (others => '0');
-signal driver_counter   : unsigned(7 downto 0) := (others => '0');
-signal read_counter     : unsigned(7 downto 0) := (others => '0');
-signal transfer_data    : std_logic := '0';
-signal read_packets     : std_logic := '0';
-signal last_packet      : std_logic := '0';
-signal data_ready       : std_logic := '0';
-signal read_all         : std_logic := '0';
-signal transfer_hold    : std_logic := '0';
+signal header_recieved        : std_logic := '0';
+signal final_packet           : std_logic := '0';
+signal bit_counter            : unsigned(4 downto 0) := (others => '0');
+signal packet_counter         : unsigned(7 downto 0) := (others => '0');
+signal read_counter           : unsigned(7 downto 0) := (others => '0');
+signal transfer_delay         : unsigned(7 downto 0) := "00100000";
+signal transfer_delay_cntr    : unsigned(7 downto 0) := (others => '0');
+signal transfer_data          : std_logic := '0';
+signal read_packets           : std_logic := '0';
+signal last_packet            : std_logic := '0';
+signal data_ready             : std_logic := '0';
+signal read_all               : std_logic := '0';
+signal transfer_hold          : std_logic := '0';
+signal lrclk_follower_r       : std_logic := '0';
 
 -- Create states for the output state machine
-type deser_state_type is (
-                            read_header,
+type deser_state_type is (  read_header,
                             read_packet   ); 
-                            
-signal deser_state : deser_state_type;
 
+signal deser_state : deser_state_type;
 
 -- Create states for the output state machine
 type state_type is (idle,read_data,increment_read_address,read_finish); 
 signal output_state : state_type;
-
-
 
 begin 
 
@@ -197,8 +195,8 @@ port map (
     sys_clk             => sys_clk,
     reset_n             => reset_n,
     
-    data_input_channel  => read_address,
-    data_input_data     => output_data_r,
+    data_input_channel  => read_address_follower,
+    data_input_data     => output_data_follower_r,
     data_input_error    => "00",
     data_input_valid    => rden_follower,
             
@@ -288,6 +286,11 @@ begin
     elsif header_found = '1' and load_counter = 31 then
       load_counter <= (others => '0');
       packet_counter <= packet_counter + 1;
+      -- if parallel_data_r(31) = '1' then 
+        -- input_data_r <= "1111" & parallel_data_r(27 downto 0);
+      -- else
+        -- input_data_r <= "0000" & parallel_data_r(27 downto 0);
+      -- end if;
       input_data_r <= parallel_data_r;
       write_address <= std_logic_vector(packet_counter(6 downto 0));
       valid_r <= '1';
@@ -357,26 +360,24 @@ begin
     
       -- When idle, reset the counters and the read signal
       when idle =>
-        read_address   <= (others => '0');
-        read_counter <= (others => '0');
-        driver_counter <= (others => '0');
-        read_all <= '0';
+        read_address    <= (others => '0');
+        read_counter    <= (others => '0');
+        read_all        <= '0';
       
        when increment_read_address => 
         -- Increment the channel read counter by two and the driver counter by one
-        read_counter <= read_counter + 1;
-        driver_counter <= driver_counter + 1;
-        rden <= '0';
+        read_counter    <= read_counter + 1;
+        rden            <= '0';
 
       when read_data =>
         -- Enable the read
-        rden <= '1';
-        read_address <= std_logic_vector(read_counter(6 downto 0));
+        rden          <= '1';
+        read_address  <= std_logic_vector(read_counter(6 downto 0));
         
       when read_finish =>
         -- Indicate all the data has been read out
-        read_all <= '1';
-        rden     <= '0';
+        read_all  <= '1';
+        rden      <= '0';
      
       when others => 
     
@@ -392,27 +393,43 @@ begin
     transfer_data <= '0';
     transfer_hold <= '0';
   elsif rising_edge(sys_clk) then 
-    if transfer_hold = '0' and data_ready = '1' then 
-      transfer_hold <= '1';
+    
+    if lrclk_follower_r /= lrclk_r then 
+      transfer_delay_cntr <= (others => '0');
+      transfer_hold <= '0';
+    else
+      transfer_delay_cntr <= transfer_delay_cntr + 1;
+    end if;
+    
+    if transfer_delay_cntr = transfer_delay and transfer_hold = '0' then 
       transfer_data <= '1';
-    elsif transfer_hold = '1' then 
-      if data_ready = '0' then 
-        transfer_hold <= '0';
-      else
-        transfer_hold <= '1';
-      end if;
-      transfer_data <= '0';
+      transfer_hold <= '1';
     else
       transfer_data <= '0';
     end if;
+    -- if transfer_hold = '0' and data_ready = '1' then 
+      -- transfer_hold <= '1';
+      -- transfer_data <= '1';
+    -- elsif transfer_hold = '1' then 
+      -- if data_ready = '0' then 
+        -- transfer_hold <= '0';
+      -- else
+        -- transfer_hold <= '1';
+      -- end if;
+      -- transfer_data <= '0';
+    -- else
+      -- transfer_data <= '0';
+    -- end if;
   end if;
 end process;
 
 follower_process: process (sys_clk)
 begin 
   if rising_edge(sys_clk) then 
-    rden_follower        <= rden;
+    rden_follower           <= rden;
     read_address_follower   <= read_address;
+    output_data_follower_r  <= output_data_follower_r;
+    lrclk_follower_r        <= lrclk_r;
   end if;
 end process;
 

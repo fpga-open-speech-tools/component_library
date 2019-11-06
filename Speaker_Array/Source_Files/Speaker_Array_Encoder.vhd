@@ -101,7 +101,7 @@ component Array_DPR is
 end component;
 
 -- TODO tie this signal with the M-Map interface component
-signal n_drivers     : unsigned(6 downto 0) := "0000100";
+signal n_drivers     : unsigned(6 downto 0) := "0000001";
 
 -- Control signals
 signal start_shifting : std_logic := '0';
@@ -204,7 +204,7 @@ begin
   elsif rising_edge(serial_clk_in) then 
   
     -- When the first data packet is recieved, start shifting the header out
-    if write_address(5 downto 0) = "000000" then -- Note: SignalTap seems to mess with the comparison...
+    if write_address(5 downto 0) = "000000" then --n_drivers then -- Note: SignalTap seems to mess with the comparison...
       start_shifting <= '1';
     else
       start_shifting <= '0';
@@ -366,7 +366,7 @@ begin
           shift_en_n <= '1';
         else
           bit_counter <= bit_counter + 1;
-          shift_en_n <= '0';
+          shift_en_n  <= '0';
         end if;
       
       when others => 
