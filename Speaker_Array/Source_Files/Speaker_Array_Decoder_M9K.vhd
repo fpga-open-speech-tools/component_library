@@ -3,8 +3,8 @@
 --! @brief Speaker array decoder component
 --! @details  
 --! @author Tyler Davis
---! @date 2019
---! @copyright Copyright 2019 Flat Earth inc
+--! @date 2020
+--! @copyright Copyright 2020 Flat Earth inc
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
