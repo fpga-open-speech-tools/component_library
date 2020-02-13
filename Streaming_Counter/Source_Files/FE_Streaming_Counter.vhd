@@ -36,13 +36,18 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity FE_Streaming_Counter is
-    generic ( n_channels : unsigned(6 downto 0) := "1000000" );
+    generic ( 
+      n_channels : unsigned(6 downto 0) := "1000000";
+      channel_width : integer := 8;
+      data_width : integer := 32
+      
+    );
     port (
         sys_clk             : in  std_logic                     := '0';
         reset_n             : in  std_logic                     := '0';
         
-        data_output_channel  : out  std_logic_vector(6 downto 0)  := (others => '0');
-        data_output_data     : out  std_logic_vector(31 downto 0) := (others => '0');
+        data_output_channel  : out  std_logic_vector(channel_width-1 downto 0)  := (others => '0');
+        data_output_data     : out  std_logic_vector(data_width-1 downto 0) := (others => '0');
         data_output_error    : out  std_logic_vector(1 downto 0)  := (others => '0');
         data_output_valid    : out  std_logic                     := '0'
     );
@@ -55,15 +60,15 @@ signal delay_value    : unsigned(31 downto 0) := "000000101110111000000000000000
 
 signal transmit_data  : std_logic := '0';
 
-signal data_r         : std_logic_vector(31 downto 0) := (others => '0');
-signal channel_r      : std_logic_vector(6 downto 0) := (others => '0');
+signal data_r         : std_logic_vector(data_width-1 downto 0) := (others => '0');
+signal channel_r      : std_logic_vector(channel_width-1 downto 0) := (others => '0');
 signal valid_r        : std_logic := '0';
 
 -- Shifter state machine signals
-signal channel_counter  : unsigned(6 downto 0) := (others => '0');
+signal channel_counter  : unsigned(channel_width-1 downto 0) := (others => '0');
 signal delay_counter    : unsigned(31 downto 0) := (others => '0');
 
-signal data_counter : std_logic_vector(31 downto 0) := (others => '0');
+signal data_counter : std_logic_vector(data_width-1 downto 0) := (others => '0');
 
 -- Create states for the streaming state machine
 type state_type is (idle,increment_counter,pass_data); 
@@ -156,7 +161,7 @@ begin
       when pass_data =>
       
         -- Load the data into the output register
-        data_r      <= "1111" & data_counter(23 downto 0) & "0000";
+        data_r      <= "1111" & data_counter(data_width-9 downto 0) & "0000";
         
         -- Load the channel into the output register
         channel_r   <= std_logic_vector(channel_counter);
