@@ -279,7 +279,7 @@ begin
     load_counter <= (others => '0');
   elsif rising_edge(serial_clk) then 
     if header_found = '0' then 
-      -- The state transitions occurs after several bits have already been transferred (Three in this case)
+      -- The state transitions occurs after several bits have already been transferred (Two in this case)
       load_counter <= "00000010";--(others => '0');
       packet_counter <= (others => '0');
       valid_r <= '0';
