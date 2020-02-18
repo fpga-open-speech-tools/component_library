@@ -37,7 +37,7 @@ use IEEE.numeric_std.all;
 
 entity FE_Streaming_Counter is
     generic ( 
-      n_channels : unsigned(6 downto 0) := "1000000";
+      n_channels : integer := 8;
       channel_width : integer := 8;
       data_width : integer := 32
       
@@ -119,7 +119,7 @@ begin
       when pass_data =>
       
         -- When the specified number of channels is reached, go idle
-        if channel_counter = n_channels - 1 then 
+        if channel_counter = to_unsigned(n_channels - 1,channel_counter'length) then 
           output_state <= idle;
           
         -- Otherwise keep incrementing the counter and passing data
