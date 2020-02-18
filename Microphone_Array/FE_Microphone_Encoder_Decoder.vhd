@@ -48,6 +48,8 @@ entity FE_Microphone_Encoder_Decoder is
   port (
     sys_clk               : in  std_logic                     := '0';
     reset_n               : in  std_logic                     := '0';
+    
+    busy_out              : out std_logic := '0';
         
     bme_input_data        : in std_logic_vector(bme_data_width-1 downto 0) := (others => '0');
     bme_input_valid       : in std_logic := '0';
@@ -71,7 +73,9 @@ entity FE_Microphone_Encoder_Decoder is
           
     serial_data_out       : out std_logic;
     serial_data_in        : in std_logic                      := '0';
-    serial_clk_in         : in  std_logic                     := '0'
+    serial_clk_in         : in  std_logic                     := '0';
+    
+    debug_out             : out std_logic_vector(7 downto 0) := (others => '0')
   );
     
 end entity FE_Microphone_Encoder_Decoder;
@@ -93,15 +97,16 @@ end component;
 
 -- Packet DATA_HEADER ID
 signal header_width : integer := 32;
-signal DATA_HEADER : std_logic_vector(header_width-1 downto 0) := x"43504C44";
+signal DATA_HEADER  : std_logic_vector(header_width-1 downto 0) := x"43504C44";
+signal CMD_HEADER   : std_logic_vector(header_width-1 downto 0) := x"46504741";
 
 -- Shift state signals
 signal shift_data             : std_logic_vector(31 downto 0) := (others => '0');
 signal shift_data_in          : std_logic_vector(7 downto 0) := (others => '0');
 signal shift_data_out         : std_logic_vector(7 downto 0) := (others => '0');
-signal byte_counter           : integer range 0 to 3 := 0;
-signal byte_counter_follower  : integer range 0 to 3 := 0;
-signal n_bytes                : integer range 0 to 3 := 0;
+signal byte_counter           : integer range 0 to 4 := 0;
+signal byte_counter_follower  : integer range 0 to 4 := 0;
+signal n_bytes                : integer range 0 to 4 := 0;
 signal bit_counter            : integer range 0 to 7 := 0;
 signal mic_counter            : integer range 0 to 64 := 0;
 signal mic_counter_follower   : integer range 0 to 64 := 0;
@@ -111,6 +116,15 @@ signal load_data              : std_logic := '0';
 signal packet_counter         : unsigned(31 downto 0) := (others => '0');
 constant shift_width          : integer := 8;
 
+
+-- Deserialization signals
+signal parallel_data_r  : std_logic_vector(31 downto 0) := (others => '0');
+signal header_found     : std_logic := '0';
+signal read_bits        : integer range 0 to 32 := 0;
+signal read_word_bits   : integer range 0 to 32 := 0;
+
+signal busy : std_logic := '0';
+
 -- Control signals
 signal start_shifting : std_logic := '0';
 signal end_shifting   : std_logic := '0';
@@ -118,7 +132,7 @@ signal shift_busy     : std_logic := '0';
 
 -- Avalon streaming signals
 type mic_array_data is array (n_mics-1 downto 0) of std_logic_vector(mic_data_width-1 downto 0);
-signal mic_input_data_r : mic_array_data := (others => x"c9c9c9c9");
+signal mic_input_data_r : mic_array_data := (others => (others => '0'));
 signal bme_input_data_r : std_logic_vector(bme_data_width-1 downto 0) := (others => '0');
 
 -- Data byte width definitions
@@ -128,6 +142,7 @@ signal n_mic_byte_width         : integer := 1;
 signal temp_byte_width          : integer := 3;
 signal humid_byte_width         : integer := 2;
 signal pressure_byte_width      : integer := 3;
+signal mic_byte_width           : integer := 3;
 
 -- BME word division definitions
 signal temp_byte_location       : integer := 8;
@@ -135,14 +150,21 @@ signal humid_byte_location      : integer := 5;
 signal pressure_byte_location   : integer := 3;
 
 -- Create states for the output state machine
-type state_type is (  idle, load_header, load_packet_number, load_n_mics, load_temp, load_pressure, load_humidity,
+type serializer_state is (  idle, load_header, load_packet_number, load_n_mics, load_temp, load_pressure, load_humidity,
                       load_mics, load_shift_reg, shift_wait );
 -- Enable recovery from illegal state
 attribute syn_encoding : string;
-attribute syn_encoding of state_type : type is "safe";
+attribute syn_encoding of serializer_state : type is "safe";
 
-signal cur_state  : state_type := idle;
-signal next_state : state_type := idle;
+signal cur_state  : serializer_state := idle;
+signal next_state : serializer_state := idle;
+
+
+-- Create the states for the deserialzier state machine
+type deser_state is (idle, read_mics, read_enable, read_rgb);
+
+-- Enable recovery from illegal state
+attribute syn_encoding of deser_state : type is "safe";
 
 begin 
 
@@ -183,8 +205,9 @@ begin
   elsif rising_edge(serial_clk_in) then 
   
     -- When the first data packet is received, start shifting the DATA_HEADER out
-    if mic_input_channel(5 downto 0) = "000000" then --n_drivers then -- Note: SignalTap seems to mess with the comparison...
+    if mic_input_channel(4 downto 0) = "00000" then --n_drivers then -- Note: SignalTap seems to mess with the comparison...
       start_shifting <= '1';
+      packet_counter <= packet_counter + 1;
     else
       start_shifting <= '0';
     end if;
@@ -205,7 +228,7 @@ end process;
 data_out_transition_process : process(serial_clk_in,reset_n)
 begin
   if reset_n = '0' then 
-    end_shifting  <= '0';
+
   elsif rising_edge(serial_clk_in) then 
     case cur_state is 
       when idle => 
@@ -251,9 +274,9 @@ begin
         cur_state <= shift_wait;
       
       when shift_wait =>
-        if byte_counter = n_bytes - 1 and bit_counter = shift_width - 3 then 
+        if byte_counter = n_bytes and bit_counter = shift_width - 3 then 
           cur_state <= next_state;
-        elsif byte_counter < n_bytes - 1 and bit_counter = shift_width - 2 then 
+        elsif byte_counter < n_bytes and bit_counter = shift_width - 2 then 
           cur_state <= load_shift_reg;
         else
           cur_state <= shift_wait;
@@ -268,17 +291,18 @@ end process;
 data_out_process : process(serial_clk_in,reset_n)
 begin
   if reset_n = '0' then 
-    end_shifting  <= '0';
+
   elsif rising_edge(serial_clk_in) then 
     case cur_state is 
       when idle => 
         bit_counter   <= 0;
+        mic_counter <= 0;
+        busy <= '0';
         
       when load_header =>
         shift_data <= DATA_HEADER;
         n_bytes <= header_byte_width;
         byte_counter <= 0;
-        
         
       when load_packet_number =>
         shift_data <= std_logic_vector(packet_counter);
@@ -291,32 +315,33 @@ begin
         byte_counter <= 0;
         
       when load_temp =>
-        shift_data(temp_byte_width-1 downto 0) <= bme_input_data_r(8*temp_byte_location-1 downto 8*(temp_byte_location-temp_byte_width));
+        shift_data(8*temp_byte_width-1 downto 0) <= bme_input_data_r(8*temp_byte_location-1 downto 8*(temp_byte_location-temp_byte_width));
         n_bytes <= temp_byte_width;
         byte_counter <= 0;
         
       when load_pressure =>
-        shift_data(pressure_byte_width-1 downto 0) <= bme_input_data_r(8*pressure_byte_location-1 downto 8*(pressure_byte_location-pressure_byte_width));
+        shift_data(8*pressure_byte_width-1 downto 0) <= bme_input_data_r(8*pressure_byte_location-1 downto 8*(pressure_byte_location-pressure_byte_width));
         n_bytes <= pressure_byte_width;
         byte_counter <= 0;
         
       when load_humidity =>
-        shift_data(humid_byte_width-1 downto 0) <= bme_input_data_r(8*humid_byte_location-1 downto 8*(humid_byte_location-humid_byte_width));
+        shift_data(8*humid_byte_width-1 downto 0) <= bme_input_data_r(8*humid_byte_location-1 downto 8*(humid_byte_location-humid_byte_width));
         n_bytes <= humid_byte_width;
         byte_counter <= 0;
       
       when load_mics =>
         mic_counter <= mic_counter + 1;
-        shift_data(mic_data_width-1 downto 0) <= mic_input_data_r(mic_counter_follower);
-        n_bytes <= mic_data_width;
+        shift_data(8*mic_byte_width-1 downto 0) <= mic_input_data_r(mic_counter_follower);
+        n_bytes <= mic_byte_width;
         byte_counter <= 0;
       
       when load_shift_reg =>
         mic_counter_follower <= mic_counter;
         bit_counter <= 0;
         byte_counter <= byte_counter + 1;
-        shift_data_in <= shift_data(8*byte_counter-1 downto 8*byte_counter_follower);
+        shift_data_in <= shift_data(8*(n_bytes-byte_counter)-1 downto 8*(n_bytes-byte_counter-1));
         load_data <= '1';
+        busy <= '1';
       
       when shift_wait =>
         bit_counter <= bit_counter + 1;
@@ -329,8 +354,14 @@ begin
   end if;
 end process;
 
+
 -- Map the RJ45 signals to the output ports
 serial_data_out <= shift_data_out(shift_width-1);
+
+-- Map the busy signal 
+busy_out <= busy;
+
+debug_out(0) <= load_data;
 
 end architecture rtl;
 
