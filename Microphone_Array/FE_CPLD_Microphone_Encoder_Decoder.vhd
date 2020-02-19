@@ -203,7 +203,7 @@ port map (
   load => load_data
 );
 
--- Process to push the data into the FIFO
+-- Process to push the data into the register
 mic_in_process : process(sys_clk,reset_n)
 begin 
   if reset_n = '0' then 
