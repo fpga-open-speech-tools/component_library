@@ -2,7 +2,7 @@
 --! @file FE_CPLD_Microphone_Encoder_Decoder.vhd
 --! @brief CPLD microphone array encoder/decoder component
 --! @details This component translates data from a variable array of microphones as well as a temperature, humidity, 
---           pressure sensor and transmits that data to an decoder on another system.  The component also translates above
+--           pressure sensor and transmits that data to an decoder on another system.  The component also translates a
 --           serial stream of data into commands to configure the microphone array.
 --! @author Tyler Davis
 --! @date 2020
@@ -104,7 +104,7 @@ signal humid_byte_width         : integer := 2;
 signal pressure_byte_width      : integer := 3;
 signal mic_byte_width           : integer := 3;
 signal cfg_byte_width           : integer := 8;
-signal rbg_byte_width           : integer := 2;
+signal rgb_byte_width           : integer := 2;
 
 -- BME word division definitions
 signal temp_byte_location       : integer := 8;
@@ -159,7 +159,7 @@ signal bme_input_data_r : std_logic_vector(bme_data_width-1 downto 0) := (others
 signal sdo_mics_r       : integer range 0 to 32 := 16;
 signal cfg_data_r    : std_logic_vector(8*cfg_byte_width-1 downto 0) := (others => '0');
 signal cfg_out_valid_r : std_logic := '0';
-signal rgb_data_r       : std_logic_vector(8*rbg_byte_width-1 downto 0) := (others => '0');
+signal rgb_data_r       : std_logic_vector(8*rgb_byte_width-1 downto 0) := (others => '0');
 signal rgb_out_valid_r : std_logic := '0';
 
 
@@ -229,7 +229,7 @@ begin
   elsif rising_edge(serial_clk_in) then 
   
     -- When the first data packet is received, start shifting the DATA_HEADER out
-    if mic_input_channel(ch_width-1 downto 0) = channel_trigger then -- TODO: Create new start condition.
+    if mic_input_channel(ch_width-1 downto 0) = channel_trigger then -- TODO: Find a better start condition.
       start_shifting <= '1';
       packet_counter <= packet_counter + 1;
     else
@@ -257,7 +257,6 @@ begin
   elsif rising_edge(serial_clk_in) then 
     case cur_sdo_state is 
       when idle => 
-      
         -- Wait for the start_shifting signal to load the header
         if start_shifting = '1' then 
           cur_sdo_state <= load_header;
@@ -405,7 +404,6 @@ begin
         byte_counter <= 0;
       
       when load_shift_reg =>
-      
         -- Update the microphone follower
         mic_counter_follower <= mic_counter;
         
@@ -421,8 +419,7 @@ begin
         busy <= '1';
       
       when shift_wait =>
-      
-        -- Increment the bit counter and reset the shift componet load signal
+        -- Increment the bit counter and reset the shift component load signal
         bit_counter <= bit_counter + 1;
         load_data <= '0';
       
@@ -447,11 +444,11 @@ bit_counter_process : process(serial_clk_in,reset_n)
 begin 
   if reset_n = '0' then 
     read_bits <= 0;
+    
   elsif rising_edge(serial_clk_in) then 
-  
     -- If the input state machine is idle, don't count the bits coming into the component
     if cur_sdi_state = idle then 
-      read_bits <= 0;
+      read_bits <= 1;
       
     -- When the counter reaches the current number of expected bits, reset it
     elsif read_bits = read_word_bits - 1 then 
@@ -470,8 +467,8 @@ begin
   
   elsif rising_edge(serial_clk_in) then 
     case cur_sdi_state is
+    
       when idle => 
-      
         -- If the header has been read, transition to reading the number of mics
         if parallel_data_r(8*header_byte_width-1 downto 0) = CMD_HEADER then
           cur_sdi_state <= read_mics;
@@ -482,7 +479,6 @@ begin
         end if;
         
       when read_mics =>
-      
         -- Once the number of microphones have been read, read the mic configuration
         if read_bits = read_word_bits - 2 then 
           cur_sdi_state <= read_enable;
@@ -491,7 +487,6 @@ begin
         end if;
       
       when read_enable =>
-        
         -- Once the mic configuration has been read, read the rgb configuration
         if read_bits = read_word_bits - 2 then 
           cur_sdi_state <= read_rgb;
@@ -500,7 +495,6 @@ begin
         end if;
       
       when read_rgb =>
-        
         -- Once the rbg LED configuration has been read, send the valid pulse
         if read_bits = read_word_bits - 2 then 
           cur_sdi_state <= valid_pulse;
@@ -527,22 +521,19 @@ begin
         send_valid <= '0';
 
       when read_mics =>
-        
         -- "Shift in" the number of microphones
         sdo_mics_r <= to_integer(unsigned(parallel_data_r(8*n_mic_byte_width-1 downto 0)));
         read_word_bits <= 8*n_mic_byte_width;
 
       when read_enable =>
-        
         -- "Shift in" the mic configuration
         cfg_data_r <= parallel_data_r(8*cfg_byte_width-1 downto 0);
         read_word_bits <= 8*cfg_byte_width;
       
       when read_rgb =>
-      
         -- "Shift in" the rbg LED configuration 
-        rgb_data_r <= parallel_data_r(8*rbg_byte_width-1 downto 0);
-        read_word_bits <= 8*rbg_byte_width;
+        rgb_data_r <= parallel_data_r(8*rgb_byte_width-1 downto 0);
+        read_word_bits <= 8*rgb_byte_width;
 
       when valid_pulse =>
         --sdo_mics <= sdo_mics_r;
@@ -559,8 +550,8 @@ begin
     sdi_valid_state <= idle;
   elsif rising_edge(sys_clk) then 
     case sdi_valid_state is 
+    
       when idle =>
-      
         -- Once the data has been read in, send a valid pulse at the system clock frequency (Avalon streaming)
         if send_valid = '1' then 
           sdi_valid_state <= pulse;
@@ -571,12 +562,10 @@ begin
         end if;
       
       when pulse => 
-        
         -- Transition to the wait state
         sdi_valid_state <= low_wait;
         
       when low_wait =>
-      
         -- When "send" signal goes low (slower clock frequency), go idle again
         if send_valid = '0' then 
           sdi_valid_state <= idle;
@@ -599,11 +588,9 @@ begin
   elsif rising_edge(sys_clk) then 
     case sdi_valid_state is 
       when idle =>
-      
         -- Do nothing
         
       when pulse => 
-        
         -- Pulse the valid Avalon streaming signals
         rgb_out_valid_r <= '1';
         cfg_out_valid_r <= '1';
