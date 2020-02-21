@@ -143,7 +143,6 @@ signal cfg_out_valid_r        : std_logic := '0';
 signal rgb_data_r             : std_logic_vector(8*rgb_byte_width-1 downto 0) := (others => '0');
 signal rgb_out_valid_r        : std_logic := '0';
 signal cur_mic                : integer range 0 to n_mics := 0;
-signal cur_mic_follower       : integer range 0 to n_mics := 0;
 
 signal send_valid             : std_logic := '0';
 signal busy                   : std_logic := '0';
@@ -510,7 +509,6 @@ begin
         read_mics <= '1';
         mic_data_r(cur_mic) <= parallel_data_r(8*mic_byte_width-1 downto 0);
         read_word_bits <= 8*mic_byte_width;
-        cur_mic_follower <= cur_mic;
 
       when valid_pulse =>
         -- Signal the valid state machines to start transferring data
