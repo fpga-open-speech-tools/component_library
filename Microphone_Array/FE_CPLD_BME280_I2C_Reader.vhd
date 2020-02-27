@@ -58,7 +58,7 @@ generic (
 end entity FE_CPLD_BME280_I2C_Reader;
 
 architecture FE_CPLD_BME280_I2C_Reader_arch of FE_CPLD_BME280_I2C_Reader is
-
+CONSTANT divider  :  INTEGER := input_clk/reads_per_second;
 component i2c_master IS
   GENERIC(
     input_clk : INTEGER := FE_CPLD_BME280_I2C_Reader.input_clk;  --input clock speed from user logic in Hz
@@ -78,14 +78,14 @@ component i2c_master IS
 END component;
 -- TODO: Set err, etc
 -- Create states for the output state machine
-type reader_state is (  idle, write, read, process_data, wait);
+type reader_state is (  idle, write, read, process_data, waiting);
 signal last_reader_state : reader_state := idle;
 signal cur_reader_state : reader_state := idle;
 signal nex_reader_state : reader_state := write;
 signal write_complete   : std_logic := '0';
 signal read_complete   : std_logic := '0';
 signal process_data_complete   : std_logic := '0';
-signal wait_complete   : std_logic := '0';
+signal wait_complete   : boolean := false;
 
 constant BME320_I2C_ADDR : std_logic_vector(6 downto 0) := "111011" & sdo;
 constant START_ADDR       : std_logic_vector(7 downto 0) := x"F7"; -- memory address to start reading from on BME320
@@ -360,7 +360,7 @@ begin
           end if;
         end if;
       when wait =>
-        if wait_complete = '1' then
+        if wait_complete then
           cur_reader_state <= write;
           next_reader_state <= reading;
         end if;
@@ -428,6 +428,22 @@ begin
   end if;
 end process;
 
+timing : process
+    variable counter : integer := 0;
+    variable waiting_ended : boolean := false;
+begin
+  waiting_ended := cur_reader_state != waiting && last_reader_state = waiting;
+  if wait_complete = true then
+    -- Do nothing
+  elsif counter = divider then
+    counter := 0;
+    wait_complete := true;
+  elsif waiting_ended then
+    wait_complete := false;
+  else 
+    counter := counter + 1;
+  end if;
 
+end process;
 
 end architecture FE_CPLD_BME280_I2C_Reader_arch;
