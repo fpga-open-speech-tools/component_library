@@ -76,9 +76,27 @@ component i2c_master IS
     sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
     scl       : INOUT  STD_LOGIC);                   --serial clock output of i2c bus
 END component;
+
+-- BME related constants
+constant BME320_I2C_ADDR : std_logic_vector(6 downto 0) := "111011" & sdo;
+constant START_ADDR       : std_logic_vector(7 downto 0) := x"F7"; -- memory address to start reading from on BME320
+constant BME320_num_calibration : integer := 33;
+
+type i2c_rec is record
+  ena  : std_logic;
+  addr : std_logic_vector(6 downto 0);
+  rw   : std_logic;
+  data_wr :std_logic_vector(7 downto 0);
+end record i2c_rec;
+
+signal read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
+signal write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => START_ADDR);
+signal read_comp_i2c : i2c_rec;
+signal i2c_control : i2c_rec;
+
 -- TODO: Set err, etc
 -- Create states for the output state machine
-type reader_state is (  idle, write, read, process_data, waiting);
+type reader_state is (  idle, write, read, process_data, waiting, read_compensation_data);
 signal last_reader_state : reader_state := idle;
 signal cur_reader_state : reader_state := idle;
 signal nex_reader_state : reader_state := write;
@@ -86,9 +104,8 @@ signal write_complete   : std_logic := '0';
 signal read_complete   : std_logic := '0';
 signal process_data_complete   : std_logic := '0';
 signal wait_complete   : boolean := false;
+signal compensation_data_received :boolean := false;
 
-constant BME320_I2C_ADDR : std_logic_vector(6 downto 0) := "111011" & sdo;
-constant START_ADDR       : std_logic_vector(7 downto 0) := x"F7"; -- memory address to start reading from on BME320
 signal read_data       : std_logic_vector(63 downto 0) := (others => '0');
 
 
@@ -143,6 +160,218 @@ dig_h3_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
 dig_h4_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
 dig_h5_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
 dig_h6_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
+
+type bit_offset is array (3 downto 0) of integer;
+
+type cal_rec is record
+  two_bytes : boolean;
+  offset    : integer;
+  is_signed : boolean;
+  bit_offsets : bit_offset;
+end record cal_rec;
+
+type cal_recs is array ((BME320_num_calibration - 1) downto 0) of cal_rec;
+constant cal_recs : cal_recs := (
+  0 => (
+    two_bytes   <= true;
+    offset      <= 0;
+    is_signed   <= false;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  1 => (
+    two_bytes   <= true;
+    offset      <= 2;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  2 => (
+    two_bytes   <= true;
+    offset      <= 4;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  3 => (
+    two_bytes   <= true;
+    offset      <= 6;
+    is_signed   <= false;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  4 => (
+    two_bytes   <= true;
+    offset      <= 8;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  5 => (
+    two_bytes   <= true;
+    offset      <= 10;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  6 => (
+    two_bytes   <= true;
+    offset      <= 12;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  7 => (
+    two_bytes   <= true;
+    offset      <= 14;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  8 => (
+    two_bytes   <= true;
+    offset      <= 16;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  9 => (
+    two_bytes   <= true;
+    offset      <= 18;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  10 => (
+    two_bytes   <= true;
+    offset      <= 20;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  11 => (
+    two_bytes   <= true;
+    offset      <= 22;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  12 => (
+    two_bytes   <= false;
+    offset      <= 24;
+    is_signed   <= false;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => -1,
+      3 => -1,
+    ) ;
+  ),
+  13 => (
+    two_bytes   <= true;
+    offset      <= 25;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => 15,
+      3 => 8,
+    ) ;
+  ),
+  14 => (
+    two_bytes   <= false;
+    offset      <= 27;
+    is_signed   <= false;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => -1,
+      3 => -1,
+    ) ;
+  ),
+  15 => (
+    two_bytes   <= true;
+    offset      <= 28;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 11,
+      1 => 4,
+      2 => 3,
+      3 => 0,
+    ) ;
+  ),
+  16 => (
+    two_bytes   <= true;
+    offset      <= 30;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 3,
+      1 => 0,
+      2 => 11,
+      3 => 4,
+    ) ;
+  ),
+  17 => (
+    two_bytes   <= false;
+    offset      <= 32;
+    is_signed   <= true;
+    bit_offsets <= (
+      0 => 7,
+      1 => 0,
+      2 => -1,
+      3 => -1,
+    ) ;
+  ),
+);
+
 
 -- Convert temperature from raw value to actual value with resolution 0.01 DegC. Output value of "5123" equals 51.23 DegC.
 -- Math is entirely based off BME 280 compensation formulas
@@ -305,6 +534,8 @@ begin
   return humid_actual;
 end function;
 
+
+
 begin
 
 i2c_component : i2c_master 
@@ -326,7 +557,7 @@ port map(
   scl       => FE_CPLD_BME280_I2C_Reader.scl,
 );  
 
-state_management : process
+state_management : process (sys_clk, reset_n)
 begin
   if reset_n = '0' then 
     cur_reader_state   <= idle;
@@ -337,32 +568,34 @@ begin
     case cur_reader_state is 
       when idle =>
         if enable = '1' then
-          cur_reader_state   <= write;
-          next_reader_state  <= reading;
+          if compensation_data_received then
+            cur_reader_state   <= write;
+          else
+            cur_reader_state   <= read_compensation_data
+        end if;
+      when read_compensation_data =>
+        if compensation_data_received then
+          cur_reader_state <= write;
         end if;
       when write =>
         if write_complete = '1' then
           cur_reader_state   <= reading;
-          next_reader_state  <= process_data;
         end if;
       when read =>
         if read_complete = '1' then
           cur_reader_state   <= process_data;
-          next_reader_state  <= wait;
         end if;
       when process_data =>
         if process_data_complete = '1' then
           if continuous = '1' then
-            cur_reader_state <= wait;
-            next_reader_state <= write;
+            cur_reader_state <= waiting;
           else
             cur_reader_state <= idle;
           end if;
         end if;
-      when wait =>
+      when waiting =>
         if wait_complete then
           cur_reader_state <= write;
-          next_reader_state <= reading;
         end if;
       when others => 
     
@@ -370,15 +603,29 @@ begin
   end if;
 end process;
 
+i2c_control : process (sys_clk, reset_n)
+  constant i2c_disable : i2c_rec := (ena => '0', addr => (others => '1'), rw => '1', data_wr => (others => '0'))
+begin
+  case cur_reader_state is 
+      when read_compensation_data =>
+        i2c_control <= read_comp_i2c;
+      when write =>
+        i2c_control <= write_i2c;
+      when read =>
+        i2c_control <= write_i2c;
+      when others => 
+        i2c_control <= i2c_disable;
+    end case;
+end process;
 
-write_memory_address : process
+write_memory_address : process (sys_clk, reset_n)
   -- when the state just became write
   variable start_write : boolean := cur_reader_state = write && last_reader_state != write;
 begin 
   if start_write then
-    i2c_rdwr <= '0';
-    i2c_data_write <= START_ADDR;
-    i2c_enable <= '1';
+    --i2c_rdwr <= '0';
+    --i2c_data_write <= START_ADDR;
+    --i2c_enable <= '1';
   elsif cur_reader_state = write then
     if i2c_busy = '0' then
       write_complete <= '1';
@@ -386,7 +633,7 @@ begin
   end if;
 end process;
 
-read_from_BME320 : process
+read_from_BME320 : process (sys_clk, reset_n)
   -- when the state just became read
   variable start_read : boolean := cur_reader_state = read && last_reader_state != read;
   variable bytes_read : integer := 0;
@@ -394,8 +641,8 @@ read_from_BME320 : process
   variable all_bytes_read : boolean := false;
 begin
   if start_read then
-    i2c_rdwr <= '1';
-    i2c_enable <= 1;
+    -- i2c_rdwr <= '1';
+    -- i2c_enable <= 1;
   elsif cur_read_state = read then
     if i2c_busy = '0' then
       read_data_index := read_data'length-8*bytes_read;
@@ -403,15 +650,16 @@ begin
       bytes_read := bytes_read + 1;
 
       -- checks if bytes_read equals the number of bytes in read_data
-      all_bytes_read := 8 * bytes_read = (read_data'length + 1); 
+      all_bytes_read := 8 * bytes_read = read_data'length; 
       if(all_bytes_read) then
         read_complete <= '1';
+        bytes_read := 0;
       end if;
     end if;
   end if;
 end process;
 
-process_data_from_BME320 : process
+process_data_from_BME320 : process (sys_clk, reset_n)
   variable temp_raw     : std_logic_vector(temp_byte_width * 8 - 1 downto 0);
   variable pressure_raw : std_logic_vector(pressure_byte_width * 8 - 1 downto 0);
   variable humid_raw    : std_logic_vector(humid_byte_width * 8 - 1 downto 0);
@@ -428,7 +676,7 @@ begin
   end if;
 end process;
 
-timing : process
+timing : process (sys_clk, reset_n)
     variable counter : integer := 0;
     variable waiting_ended : boolean := false;
 begin
@@ -444,6 +692,78 @@ begin
     counter := counter + 1;
   end if;
 
+end process;
+
+read_compensation_data_from_BME280 : process (sys_clk, reset_n)
+    type compensation_data_reader_state is (idle, init_write, init_read, sec_write, sec_read);
+    constant INIT_COMP_ADDR : std_logic_vector(7 downto 0) := x"88";
+    constant SEC_COMP_ADDR  : std_logic_vector(7 downto 0) := x"E1";
+    constant INIT_BYTES     : integer := 25;
+    constant SEC_BYTES      : integer := 8;
+
+    variable read_data      : std_logic_vector((INIT_BYTES + SEC_BYTES) * 8 -1 downto 0);
+    variable cur_comp_data_reader_state : compensation_data_reader_state := idle;
+    variable init_write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => INIT_COMP_ADDR);
+    variable sec_write_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => SEC_COMP_ADDR);
+    -- variable init_read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
+
+begin
+  if reset_n = '0' then
+    cur_comp_data_reader_state <= idle;
+    read_comp_i2c <= init_write_i2c;
+  else
+    case cur_comp_data_reader_state is
+      when init_write =>
+        read_comp_i2c <= init_write_i2c;
+        if i2c_busy = '0' then
+          cur_comp_data_reader_state <= init_read;
+        end if;
+      when init_read =>
+        read_comp_i2c <= read_i2c;
+        if i2c_busy = '0' then
+          read_data_index := read_data'length-8*bytes_read;
+          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
+          bytes_read := bytes_read + 1;
+    
+          -- checks if bytes_read equals the number of bytes in read_data
+          all_bytes_read := bytes_read = INIT_BYTES; 
+          if(all_bytes_read) then
+            cur_comp_data_reader_state <= sec_write;
+          end if;
+        end if;
+      when sec_write =>
+        read_comp_i2c <= sec_write_i2c;
+        if i2c_busy = '0' then
+          cur_comp_data_reader_state <= sec_read;
+        end if;
+      when sec_read =>
+        read_comp_i2c <= read_i2c;
+        if i2c_busy = '0' then
+          read_data_index := read_data'length-8*bytes_read;
+          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
+          bytes_read := bytes_read + 1;
+    
+          -- checks if bytes_read equals the number of bytes in read_data
+          all_bytes_read := bytes_read = INIT_BYTES + SEC_BYTES; 
+          if(all_bytes_read) then
+            cur_comp_data_reader_state <= idle;
+            compensation_data_received <= true;
+            bytes_read := 0;
+
+            assign_data : for I in 0 to N-1 generate
+            D_Flip_Flop :
+            D_FF port map
+                 (S(I+1), S(I), Q(I), S(I+1));
+            end generate;
+
+          end if;
+        end if;
+      when idle =>
+        -- Do nothing
+      when others =>
+    end case;
+  end if;
+     
 end process;
 
 end architecture FE_CPLD_BME280_I2C_Reader_arch;
