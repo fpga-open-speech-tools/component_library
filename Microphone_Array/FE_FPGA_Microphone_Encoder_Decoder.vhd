@@ -128,7 +128,7 @@ signal mic_counter_follower   : integer range 0 to 64 := 0;
 signal shift_out              : std_logic;
 signal shift_en_n             : std_logic := '0';
 signal load_data              : std_logic := '0';
-signal packet_number         : unsigned(31 downto 0) := (others => '0');
+signal packet_number          : unsigned(31 downto 0) := (others => '0');
 signal sdo_mics               : integer range 0 to 64 := 16;
 constant shift_width          : integer := 8;
 
@@ -156,7 +156,7 @@ signal shift_busy             : std_logic := '0';
 -- Avalon streaming signals
 type mic_array_data is array (n_mics-1 downto 0) of std_logic_vector(mic_data_width-1 downto 0);
 
--- Workaround for a memory initilzation error associated with defining an array
+-- Workaround for a memory initialization error associated with defining an array
 -- Assignments -> Device -> Device and Pin Options -> Configuration -> Configuration Mode: Single uncompressed image with Memory Initialization
 signal mic_data_r             : mic_array_data := (others => (others => '0'));
 signal channel_counter        : integer range 0 to n_mics := 0;
