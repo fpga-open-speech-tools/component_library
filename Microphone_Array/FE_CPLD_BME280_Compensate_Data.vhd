@@ -25,8 +25,21 @@ package FE_CPLD_BME280_Compensate_Data is
   type cal_recs is array ((BME320_num_calibration - 1) downto 0) of cal_rec;
 
   -- Used to return both t_fine and temp_actual from TempRawToActual
-  type cal_temp_vals is array(1 downto 0) of signed(31 downto 0);
-
+  type cal_temp_vals is record
+      temp_actual : signed(31 downto 0);
+		t_fine      : signed(31 downto 0);
+  end record cal_temp_vals;
+  
+  constant cal_reg_raw_length : integer := 32;
+  constant cal_reg_raw_byte_width : integer := 1;
+  constant cal_reg_length : integer := 18;
+  constant cal_reg_byte_width : integer := 2;
+  
+  type raw_cal_reg is array (cal_reg_raw_length - 1 downto 0) of std_logic_vector(cal_reg_raw_byte_width * 8 - 1 downto 0);
+  -- TODO: Refactor this to be signed instead of std_logic_vector
+  type actual_cal_reg is array(cal_reg_length - 1 downto 0) of signed(cal_reg_byte_width * 8 - 1 downto 0);
+  
+  
   -- Convert temperature from raw value to actual value with resolution 0.01 DegC. Output value of "5123" equals 51.23 DegC.
   -- Math is entirely based off BME 280 compensation formulas
   -- temp_raw : raw temperature data from BME 280
@@ -78,7 +91,9 @@ package FE_CPLD_BME280_Compensate_Data is
                             t_fine     : signed(31 downto 0)
                             )
                             return unsigned;
-
+									 
+	-- Information to decode raw compensation registers
+	-- Based off BME 280 compensation table
     constant cal_records : cal_recs := (
       0 => (
         two_bytes   => true,
@@ -290,7 +305,7 @@ package body FE_CPLD_BME280_Compensate_Data is
 -- dig_t2_std : calibration value dig_t2 from BME 280
 -- dig_t3_std : calibration value dig_t3 from BME 280
 -- Returns array of signed values, first value containing temp value and second containing t_fine
-impure function TempRawToActual(temp_raw_std : std_logic_vector(temp_byte_width * 8 -1 downto 0);
+function TempRawToActual(temp_raw_std : std_logic_vector(temp_byte_width * 8 -1 downto 0);
                                 dig_t1_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
                                 dig_t2_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
                                 dig_t3_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0)) 
@@ -320,7 +335,7 @@ begin
   temp_fine := var1 + var2;
   temp_actual := shift_right(temp_fine * 5 + 128, 8);
 
-  results := (0 => temp_actual, 1 => temp_fine);
+  results := (temp_actual => temp_actual, t_fine => temp_fine);
 
   return results;
 end function;
@@ -457,6 +472,56 @@ begin
   
   humid_actual := unsigned(shift_right(v_x1_u32r, 12));
   return humid_actual;
+end function;
+
+-- Convert raw calibration register values to actual compensation values
+-- Returns array of the 18 compensation values converted to signed
+-- 0-2 is temp, 3-11 is pressure, and 12-17 is humid compensation values
+-- pressure_raw : raw temperature data from BME 280
+-- dig_px_std : calibration value dig_px from BME 280 where x = 1 to 6
+-- t_fine     : fine temperature calibration value found durin
+function decode_comp_registers(cal_decode_vals : cal_recs; cal_raw_regs : raw_cal_reg)
+										 return actual_cal_reg is
+  variable actual_cal_regs   : actual_cal_reg;
+  variable temp_cal_rec  : cal_rec;
+  variable cal_sorted    : std_logic_vector( 15 downto 0);
+  variable raw_cal       : std_logic_vector( 15 downto 0);
+  variable offset        : integer;
+  variable actual_cal    : signed(15 downto 0);
+  variable is_12bit      : boolean;
+begin
+	 for cal_ind in cal_reg_length - 1 downto 0 loop
+		temp_cal_rec := cal_decode_vals(cal_ind);
+		
+		if(temp_cal_rec.two_bytes) then 
+			raw_cal := cal_raw_regs(offset) & cal_raw_regs( offset + 1 );
+			
+			-- TODO: verify this is correct
+			cal_sorted(7 downto 0) := raw_cal(temp_cal_rec.bit_offsets(0) downto temp_cal_rec.bit_offsets(1));
+			cal_sorted(15 downto 8) := raw_cal(temp_cal_rec.bit_offsets(2) downto temp_cal_rec.bit_offsets(3));
+			
+			if temp_cal_rec.is_signed then
+				is_12bit := temp_cal_rec.bit_offsets(0) = 11 or temp_cal_rec.bit_offsets(2) = 11;
+				if is_12bit then
+				  actual_cal := resize(signed(cal_sorted(11 downto 0)), 16);
+				else
+				  actual_cal := signed(cal_sorted);
+				end if;
+			else
+			  actual_cal := signed(unsigned(cal_sorted));
+			end if;
+		else -- cal is a single byte
+		  raw_cal := cal_raw_regs(offset);
+		  if temp_cal_rec.is_signed then
+		    actual_cal := resize(signed(raw_cal), 16);
+		  else
+		    actual_cal := resize(signed(unsigned(raw_cal)), 16);
+		  end if;
+		end if;
+		actual_cal_regs(cal_ind) := actual_cal;
+	end loop;
+	
+	return actual_cal_regs;
 end function;
 
 end package body FE_CPLD_BME280_Compensate_Data;

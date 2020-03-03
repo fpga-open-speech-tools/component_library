@@ -125,9 +125,9 @@ constant pressure_byte_location   : integer := 8;
 -- Signals for i2c control
 signal i2c_enable : std_logic;
 signal i2c_rdwr   : std_logic;
-signal i2c_data_write : std_logic(7 downto 0);
+signal i2c_data_write : std_logic_vector(7 downto 0);
 signal i2c_busy : std_logic;
-signal i2c_data_read : std_logic(7 downto 0);
+signal i2c_data_read : std_logic_vector(7 downto 0);
 signal i2c_err : std_logic;
 
 -- Conversion variable used for pressure and humidity, assigned from temperature conversion
@@ -135,6 +135,7 @@ signal calibration_err : boolean;
 
 -- TODO: Update for length to use byte width definition
 signal temp_actual : signed(31 downto 0);
+signal t_fine : signed(31 downto 0);
 signal pressure_actual : unsigned(31 downto 0);
 signal humid_actual    : unsigned(31 downto 0);
 
@@ -187,7 +188,6 @@ state_management : process (sys_clk, reset_n)
 begin
   if reset_n = '0' then 
     cur_reader_state   <= idle;
-    next_reader_state  <= write;
     last_reader_state  <= idle;
   else
     last_reader_state <= cur_reader_state;
@@ -206,7 +206,7 @@ begin
         end if;
       when write =>
         if write_complete = '1' then
-          cur_reader_state   <= reading;
+          cur_reader_state   <= read;
         end if;
       when read =>
         if read_complete = '1' then
@@ -230,7 +230,7 @@ begin
   end if;
 end process;
 
-i2c_control : process (sys_clk, reset_n)
+i2c_control_proc : process (sys_clk, reset_n)
   constant i2c_disable : i2c_rec := (ena => '0', addr => (others => '1'), rw => '1', data_wr => (others => '0'));
 begin
   case cur_reader_state is 
@@ -247,7 +247,7 @@ end process;
 
 write_memory_address : process (sys_clk, reset_n)
   -- when the state just became write
-  variable start_write : boolean := (cur_reader_state = write) && (last_reader_state /= write);
+  variable start_write : boolean := (cur_reader_state = write) and (last_reader_state /= write);
 begin 
   if start_write then
     --i2c_rdwr <= '0';
@@ -262,7 +262,7 @@ end process;
 
 read_from_BME320 : process (sys_clk, reset_n)
   -- when the state just became read
-  variable start_read : boolean := cur_reader_state = read && last_reader_state /= read;
+  variable start_read : boolean := cur_reader_state = read and last_reader_state /= read;
   variable bytes_read : integer := 0;
   variable read_data_index : integer;
   variable all_bytes_read : boolean := false;
@@ -270,7 +270,7 @@ begin
   if start_read then
     -- i2c_rdwr <= '1';
     -- i2c_enable <= 1;
-  elsif cur_read_state = read then
+  elsif cur_reader_state = read then
     if i2c_busy = '0' then
       read_data_index := read_data'length-8*bytes_read;
       read_data(read_data_index downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
@@ -290,16 +290,20 @@ process_data_from_BME320 : process (sys_clk, reset_n)
   variable temp_raw     : std_logic_vector(temp_byte_width * 8 - 1 downto 0);
   variable pressure_raw : std_logic_vector(pressure_byte_width * 8 - 1 downto 0);
   variable humid_raw    : std_logic_vector(humid_byte_width * 8 - 1 downto 0);
+  variable temp_comp_results : cal_temp_vals;
 begin
   if cur_reader_state = process_data then
     temp_raw := read_data(temp_byte_location * 8 - 1         downto (temp_byte_location - temp_byte_width));
     pressure_raw := read_data(pressure_byte_location * 8 - 1 downto (pressure_byte_location - pressure_byte_width));
     humid_raw := read_data(humid_byte_location * 8 - 1       downto (humid_byte_location - humid_byte_width));
 
-    temp_actual <= TempRawToActual(temp_raw, dig_t1_std, dig_t2_std, dig_t3_std);
+    temp_comp_results := TempRawToActual(temp_raw, dig_t1_std, dig_t2_std, dig_t3_std);
+	 temp_actual <= temp_comp_results.temp_actual;
+	 t_fine      <= temp_comp_results.t_fine;
+	 
     pressure_actual <= PressureRawToActual(pressure_raw, dig_p1_std, dig_p2_std, dig_p3_std, dig_p4_std, dig_p5_std, 
-                                           dig_p6_std, dig_p7_std, dig_p8_std, dig_p9_std);
-    humid_actual <= HumidRawToActual(humid_raw, dig_h1_std, dig_h2_std, dig_h3_std, dig_h4_std, dig_h5_std, dig_h6_std);                                      
+                                           dig_p6_std, dig_p7_std, dig_p8_std, dig_p9_std, t_fine);
+    humid_actual <= HumidRawToActual(humid_raw, dig_h1_std, dig_h2_std, dig_h3_std, dig_h4_std, dig_h5_std, dig_h6_std, t_fine);                                      
   end if;
 end process;
 
@@ -307,14 +311,14 @@ timing : process (sys_clk, reset_n)
     variable counter : integer := 0;
     variable waiting_ended : boolean := false;
 begin
-  waiting_ended := cur_reader_state /= waiting && last_reader_state = waiting;
+  waiting_ended := cur_reader_state /= waiting and last_reader_state = waiting;
   if wait_complete = true then
     -- Do nothing
   elsif counter = divider then
     counter := 0;
-    wait_complete := true;
+    wait_complete <= true;
   elsif waiting_ended then
-    wait_complete := false;
+    wait_complete <= false;
   else 
     counter := counter + 1;
   end if;
@@ -329,51 +333,54 @@ read_compensation_data_from_BME280 : process (sys_clk, reset_n)
     constant SEC_BYTES      : integer := 8;
 
     variable read_data      : std_logic_vector((INIT_BYTES + SEC_BYTES) * 8 -1 downto 0);
-    variable cur_comp_data_reader_state : compensation_data_reader_state := idle;
+    variable read_data_index : integer;
+	 variable bytes_read      : integer;
+	 variable all_bytes_read  : boolean;
+	 variable cur_comp_data_reader_state : compensation_data_reader_state := idle;
     variable init_write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => INIT_COMP_ADDR);
     variable sec_write_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => SEC_COMP_ADDR);
     -- variable init_read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
 
 begin
   if reset_n = '0' then
-    cur_comp_data_reader_state <= idle;
+    cur_comp_data_reader_state := idle;
     read_comp_i2c <= init_write_i2c;
   else
     case cur_comp_data_reader_state is
       when init_write =>
         read_comp_i2c <= init_write_i2c;
         if i2c_busy = '0' then
-          cur_comp_data_reader_state <= init_read;
+          cur_comp_data_reader_state := init_read;
         end if;
       when init_read =>
         read_comp_i2c <= read_i2c;
         if i2c_busy = '0' then
           read_data_index := read_data'length-8*bytes_read;
-          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
+          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) := i2c_data_read;
           bytes_read := bytes_read + 1;
     
           -- checks if bytes_read equals the number of bytes in read_data
           all_bytes_read := bytes_read = INIT_BYTES; 
           if(all_bytes_read) then
-            cur_comp_data_reader_state <= sec_write;
+            cur_comp_data_reader_state := sec_write;
           end if;
         end if;
       when sec_write =>
         read_comp_i2c <= sec_write_i2c;
         if i2c_busy = '0' then
-          cur_comp_data_reader_state <= sec_read;
+          cur_comp_data_reader_state := sec_read;
         end if;
       when sec_read =>
         read_comp_i2c <= read_i2c;
         if i2c_busy = '0' then
           read_data_index := read_data'length-8*bytes_read;
-          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
+          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) := i2c_data_read;
           bytes_read := bytes_read + 1;
     
           -- checks if bytes_read equals the number of bytes in read_data
           all_bytes_read := bytes_read = INIT_BYTES + SEC_BYTES; 
           if(all_bytes_read) then
-            cur_comp_data_reader_state <= idle;
+            cur_comp_data_reader_state := idle;
             compensation_data_received <= true;
             bytes_read := 0;
 
