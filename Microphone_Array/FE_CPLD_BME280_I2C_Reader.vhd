@@ -51,7 +51,7 @@ generic (
     enable                : in  std_logic                     := 'X'; --starts the process when enabled
     busy_out              : out std_logic := '0';
         
-    bme_output_data       : out std_logic_vector(63 downto 0) := (others => '0');
+    bme_output_data       : out std_logic_vector(95 downto 0) := (others => '0');  -- 3 signed 32 bit words
     bme_output_valid      : out std_logic := '0';
     bme_output_error      : out std_logic_vector(1 downto 0) := (others => '0');
     sda                   : INOUT  std_logic;                    --serial data output of i2c bus
@@ -139,29 +139,8 @@ signal t_fine : signed(31 downto 0);
 signal pressure_actual : unsigned(31 downto 0);
 signal humid_actual    : unsigned(31 downto 0);
 
--- Calibration values for temperature, from the BME280
-signal dig_t1_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_t2_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_t3_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-
--- Calibration values for pressure, from the BME280
-signal dig_p1_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p2_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p3_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p4_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p5_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p6_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p7_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p8_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_p9_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-
--- Calibrations values for humidity, from the BME280
-signal dig_h1_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_h2_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_h3_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_h4_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_h5_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
-signal dig_h6_std : std_logic_vector(calibration_byte_width * 8 - 1 downto 0);
+-- Calibration values for temperature, pressure, and humidity from the BME280
+signal compensation_data : actual_cal_reg;
 
 begin
 
@@ -194,11 +173,14 @@ begin
     case cur_reader_state is 
       when idle =>
         if enable = '1' then
+          busy_out <= '1';
           if compensation_data_received then
             cur_reader_state   <= write;
           else
             cur_reader_state   <= read_compensation_data;
-			 end if;
+          end if;
+        else
+          busy_out <= '0';
         end if;
       when read_compensation_data =>
         if compensation_data_received then
@@ -264,7 +246,7 @@ read_from_BME320 : process (sys_clk, reset_n)
   -- when the state just became read
   variable start_read : boolean := cur_reader_state = read and last_reader_state /= read;
   variable bytes_read : integer := 0;
-  variable read_data_index : integer;
+  variable read_data_index : natural;
   variable all_bytes_read : boolean := false;
 begin
   if start_read then
@@ -297,13 +279,21 @@ begin
     pressure_raw := read_data(pressure_byte_location * 8 - 1 downto (pressure_byte_location - pressure_byte_width));
     humid_raw := read_data(humid_byte_location * 8 - 1       downto (humid_byte_location - humid_byte_width));
 
-    temp_comp_results := TempRawToActual(temp_raw, dig_t1_std, dig_t2_std, dig_t3_std);
-	 temp_actual <= temp_comp_results.temp_actual;
-	 t_fine      <= temp_comp_results.t_fine;
+    temp_comp_results := TempRawToActual(temp_raw, compensation_data(temp_comp_byte_location), 
+                                         compensation_data(temp_comp_byte_location + 1), compensation_data(temp_comp_byte_location + 2));
+	  temp_actual <= temp_comp_results.temp_actual;
+	  t_fine      <= temp_comp_results.t_fine;
 	 
-    pressure_actual <= PressureRawToActual(pressure_raw, dig_p1_std, dig_p2_std, dig_p3_std, dig_p4_std, dig_p5_std, 
-                                           dig_p6_std, dig_p7_std, dig_p8_std, dig_p9_std, t_fine);
-    humid_actual <= HumidRawToActual(humid_raw, dig_h1_std, dig_h2_std, dig_h3_std, dig_h4_std, dig_h5_std, dig_h6_std, t_fine);                                      
+    pressure_actual <= PressureRawToActual(pressure_raw, compensation_data(pressure_comp_byte_location), compensation_data(pressure_comp_byte_location + 1),
+                                           compensation_data(pressure_comp_byte_location + 2), compensation_data(pressure_comp_byte_location + 3),
+                                           compensation_data(pressure_comp_byte_location + 4), compensation_data(pressure_comp_byte_location + 5), 
+                                           compensation_data(pressure_comp_byte_location + 6), compensation_data(pressure_comp_byte_location + 7), 
+                                           compensation_data(pressure_comp_byte_location + 8), t_fine);
+    humid_actual <= HumidRawToActual(humid_raw, compensation_data(humid_comp_byte_location), compensation_data(humid_comp_byte_location + 1),
+                                     compensation_data(humid_comp_byte_location + 2), compensation_data(humid_comp_byte_location + 3), 
+                                     compensation_data(humid_comp_byte_location + 4), compensation_data(humid_comp_byte_location + 5), 
+                                     t_fine);
+    bme_output_data <= std_logic_vector(temp_actual) & std_logic_vector(pressure_actual) & std_logic_vector(humid_actual);                                     
   end if;
 end process;
 
@@ -332,11 +322,10 @@ read_compensation_data_from_BME280 : process (sys_clk, reset_n)
     constant INIT_BYTES     : integer := 25;
     constant SEC_BYTES      : integer := 8;
 
-    variable read_data      : std_logic_vector((INIT_BYTES + SEC_BYTES) * 8 -1 downto 0);
-    variable read_data_index : integer;
-	 variable bytes_read      : integer;
-	 variable all_bytes_read  : boolean;
-	 variable cur_comp_data_reader_state : compensation_data_reader_state := idle;
+    variable raw_comp_regs   : raw_cal_reg;
+	  variable bytes_read      : integer := 0;
+	  variable all_bytes_read  : boolean;
+	  variable cur_comp_data_reader_state : compensation_data_reader_state := idle;
     variable init_write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => INIT_COMP_ADDR);
     variable sec_write_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => SEC_COMP_ADDR);
     -- variable init_read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
@@ -345,6 +334,7 @@ begin
   if reset_n = '0' then
     cur_comp_data_reader_state := idle;
     read_comp_i2c <= init_write_i2c;
+    bytes_read := 0;
   else
     case cur_comp_data_reader_state is
       when init_write =>
@@ -355,8 +345,7 @@ begin
       when init_read =>
         read_comp_i2c <= read_i2c;
         if i2c_busy = '0' then
-          read_data_index := read_data'length-8*bytes_read;
-          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) := i2c_data_read;
+          raw_comp_regs(bytes_read) := i2c_data_read;
           bytes_read := bytes_read + 1;
     
           -- checks if bytes_read equals the number of bytes in read_data
@@ -373,8 +362,7 @@ begin
       when sec_read =>
         read_comp_i2c <= read_i2c;
         if i2c_busy = '0' then
-          read_data_index := read_data'length-8*bytes_read;
-          read_data(read_data_index downto (read_data_index - i2c_data_read'length)) := i2c_data_read;
+          raw_comp_regs(bytes_read) := i2c_data_read;
           bytes_read := bytes_read + 1;
     
           -- checks if bytes_read equals the number of bytes in read_data
@@ -384,8 +372,7 @@ begin
             compensation_data_received <= true;
             bytes_read := 0;
 
-            -- TODO: Handle assignments here (w/ procedure?)
-
+            compensation_data <= decode_comp_registers(cal_records, raw_comp_regs);
           end if;
         end if;
       when idle =>
