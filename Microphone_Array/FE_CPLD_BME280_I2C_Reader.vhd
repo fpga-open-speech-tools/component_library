@@ -98,23 +98,23 @@ signal i2c_control : i2c_rec;
 
 -- TODO: Set err, etc
 -- Create states for the output state machine
-type reader_state is (  idle, write, read, process_data, waiting, read_compensation_data);
+type reader_state is (  idle, write, read, process_data, waiting, init);
 signal last_reader_state : reader_state := idle;
 signal cur_reader_state : reader_state := idle;
-signal nex_reader_state : reader_state := write;
+--signal nex_reader_state : reader_state := write;
 signal write_complete   : std_logic := '0';
 signal read_complete   : std_logic := '0';
 signal process_data_complete   : std_logic := '0';
 signal wait_complete   : boolean := false;
-signal compensation_data_received :boolean := false;
+signal compensation_data_received : boolean := false;
 
 signal read_data       : std_logic_vector(63 downto 0) := (others => '0');
 
 
 -- Data byte width definitions
-constant temp_byte_width          : integer := 3;
-constant humid_byte_width         : integer := 2;
-constant pressure_byte_width      : integer := 3;
+constant temp_bit_width          : integer := 20;
+constant humid_bit_width         : integer := 16;
+constant pressure_bit_width      : integer := 20;
 constant calibration_byte_width   : integer := 2;
 
 -- BME word division definitions
@@ -152,10 +152,10 @@ generic map (
 port map(
   clk       => sys_clk,
   reset_n   => reset_n,
-  ena       => i2c_enable,
-  addr      => BME320_I2C_ADDR,
-  rw        => i2c_rdwr,
-  data_wr   => i2c_data_write,
+  ena       => i2c_control.ena,
+  addr      => i2c_control.addr,
+  rw        => i2c_control.rw,
+  data_wr   => i2c_control.data_wr,
   busy      => i2c_busy,
   data_rd   => i2c_data_read,
   ack_error => i2c_err,
@@ -163,12 +163,15 @@ port map(
   scl       => FE_CPLD_BME280_I2C_Reader.scl
 );  
 
+bme_output_error(0) <= i2c_err;
+
 state_management : process (sys_clk, reset_n)
 begin
   if reset_n = '0' then 
     cur_reader_state   <= idle;
     last_reader_state  <= idle;
-  else
+	  busy_out <= '0';
+  elsif rising_edge(sys_clk) then  
     last_reader_state <= cur_reader_state;
     case cur_reader_state is 
       when idle =>
@@ -177,12 +180,12 @@ begin
           if compensation_data_received then
             cur_reader_state   <= write;
           else
-            cur_reader_state   <= read_compensation_data;
+            cur_reader_state   <= init;
           end if;
         else
           busy_out <= '0';
         end if;
-      when read_compensation_data =>
+      when init =>
         if compensation_data_received then
           cur_reader_state <= write;
         end if;
@@ -215,85 +218,115 @@ end process;
 i2c_control_proc : process (sys_clk, reset_n)
   constant i2c_disable : i2c_rec := (ena => '0', addr => (others => '1'), rw => '1', data_wr => (others => '0'));
 begin
-  case cur_reader_state is 
-      when read_compensation_data =>
-        i2c_control <= read_comp_i2c;
-      when write =>
-        i2c_control <= write_i2c;
-      when read =>
-        i2c_control <= write_i2c;
-      when others => 
-        i2c_control <= i2c_disable;
+  if reset_n = '0' then 
+    i2c_control <= i2c_disable;
+  elsif rising_edge(sys_clk) then
+    case cur_reader_state is 
+        when init =>
+          i2c_control <= read_comp_i2c;
+        when write =>
+          i2c_control <= write_i2c;
+        when read =>
+          i2c_control <= read_i2c;
+        when others => 
+          i2c_control <= i2c_disable;
     end case;
+  end if;
 end process;
 
-write_memory_address : process (sys_clk, reset_n)
+write_memory_address : process (sys_clk, reset_n, cur_reader_state, last_reader_state)
   -- when the state just became write
-  variable start_write : boolean := (cur_reader_state = write) and (last_reader_state /= write);
+  variable start_write : boolean;
 begin 
-  if start_write then
-    --i2c_rdwr <= '0';
-    --i2c_data_write <= START_ADDR;
-    --i2c_enable <= '1';
-  elsif cur_reader_state = write then
-    if i2c_busy = '0' then
-      write_complete <= '1';
+  if reset_n = '0' then 
+    write_complete <= '0';
+  elsif rising_edge(sys_clk) then
+    start_write:= (cur_reader_state = write) and (last_reader_state /= write);
+    if start_write then
+      --i2c_rdwr <= '0';
+      --i2c_data_write <= START_ADDR;
+      --i2c_enable <= '1';
+    elsif cur_reader_state = write then
+      if i2c_busy = '0' then
+        write_complete <= '1';
+      end if;
+    else
+      write_complete <= '0';
     end if;
   end if;
 end process;
 
-read_from_BME320 : process (sys_clk, reset_n)
+read_from_BME320 : process (sys_clk, reset_n, cur_reader_state, last_reader_state)
   -- when the state just became read
-  variable start_read : boolean := cur_reader_state = read and last_reader_state /= read;
-  variable bytes_read : integer := 0;
-  variable read_data_index : natural;
+  variable start_read : boolean;
+  variable bytes_read : natural range 0 to read_data'length := 0;
+  variable read_data_index : natural range 0 to 63;
   variable all_bytes_read : boolean := false;
 begin
-  if start_read then
-    -- i2c_rdwr <= '1';
-    -- i2c_enable <= 1;
-  elsif cur_reader_state = read then
-    if i2c_busy = '0' then
-      read_data_index := read_data'length-8*bytes_read;
-      read_data(read_data_index downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
-      bytes_read := bytes_read + 1;
-
-      -- checks if bytes_read equals the number of bytes in read_data
-      all_bytes_read := 8 * bytes_read = read_data'length; 
-      if(all_bytes_read) then
-        read_complete <= '1';
-        bytes_read := 0;
+  if reset_n = '0' then 
+	 read_complete <= '0';
+	 bytes_read := 0;
+  elsif rising_edge(sys_clk) then
+    start_read := cur_reader_state = read and last_reader_state /= read;
+    if start_read then
+      -- i2c_rdwr <= '1';
+      -- i2c_enable <= 1;
+    elsif cur_reader_state = read then
+      if i2c_busy = '0' then
+        read_data_index := read_data'length-8 * bytes_read;
+        read_data(read_data_index - 1 downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
+        bytes_read := bytes_read + 1;
+  
+        -- checks if bytes_read equals the number of bytes in read_data
+        all_bytes_read := 8 * bytes_read = read_data'length; 
+        if(all_bytes_read) then
+          read_complete <= '1';
+          bytes_read := 0;
+        end if;
       end if;
+	 else
+	   read_complete <= '0';
     end if;
   end if;
 end process;
 
 process_data_from_BME320 : process (sys_clk, reset_n)
-  variable temp_raw     : std_logic_vector(temp_byte_width * 8 - 1 downto 0);
-  variable pressure_raw : std_logic_vector(pressure_byte_width * 8 - 1 downto 0);
-  variable humid_raw    : std_logic_vector(humid_byte_width * 8 - 1 downto 0);
+  variable temp_raw     : std_logic_vector(temp_bit_width - 1 downto 0);
+  variable pressure_raw : std_logic_vector(pressure_bit_width - 1 downto 0);
+  variable humid_raw    : std_logic_vector(humid_bit_width - 1 downto 0);
   variable temp_comp_results : cal_temp_vals;
 begin
-  if cur_reader_state = process_data then
-    temp_raw := read_data(temp_byte_location * 8 - 1         downto (temp_byte_location - temp_byte_width));
-    pressure_raw := read_data(pressure_byte_location * 8 - 1 downto (pressure_byte_location - pressure_byte_width));
-    humid_raw := read_data(humid_byte_location * 8 - 1       downto (humid_byte_location - humid_byte_width));
-
-    temp_comp_results := TempRawToActual(temp_raw, compensation_data(temp_comp_byte_location), 
-                                         compensation_data(temp_comp_byte_location + 1), compensation_data(temp_comp_byte_location + 2));
-	  temp_actual <= temp_comp_results.temp_actual;
-	  t_fine      <= temp_comp_results.t_fine;
-	 
-    pressure_actual <= PressureRawToActual(pressure_raw, compensation_data(pressure_comp_byte_location), compensation_data(pressure_comp_byte_location + 1),
-                                           compensation_data(pressure_comp_byte_location + 2), compensation_data(pressure_comp_byte_location + 3),
-                                           compensation_data(pressure_comp_byte_location + 4), compensation_data(pressure_comp_byte_location + 5), 
-                                           compensation_data(pressure_comp_byte_location + 6), compensation_data(pressure_comp_byte_location + 7), 
-                                           compensation_data(pressure_comp_byte_location + 8), t_fine);
-    humid_actual <= HumidRawToActual(humid_raw, compensation_data(humid_comp_byte_location), compensation_data(humid_comp_byte_location + 1),
-                                     compensation_data(humid_comp_byte_location + 2), compensation_data(humid_comp_byte_location + 3), 
-                                     compensation_data(humid_comp_byte_location + 4), compensation_data(humid_comp_byte_location + 5), 
-                                     t_fine);
-    bme_output_data <= std_logic_vector(temp_actual) & std_logic_vector(pressure_actual) & std_logic_vector(humid_actual);                                     
+  if reset_n = '0' then 
+	 temp_actual     <= (others => '0');
+	 t_fine          <= (others => '0');
+    pressure_actual <= (others => '0');
+    humid_actual    <= (others => '0');
+    bme_output_data <= (others => '0');  
+  elsif rising_edge(sys_clk) then
+    if cur_reader_state = process_data then
+      temp_raw := read_data(temp_byte_location * 8 - 1         downto (temp_byte_location * 8 - temp_bit_width));
+      pressure_raw := read_data(pressure_byte_location * 8 - 1 downto (pressure_byte_location * 8 - pressure_bit_width));
+      humid_raw := read_data(humid_byte_location * 8 - 1       downto (humid_byte_location * 8 - humid_bit_width));
+  
+      temp_comp_results := TempRawToActual(temp_raw, compensation_data(temp_comp_byte_location), 
+                                           compensation_data(temp_comp_byte_location + 1), compensation_data(temp_comp_byte_location + 2));
+	   temp_actual <= temp_comp_results.temp_actual;
+	   t_fine      <= temp_comp_results.t_fine;
+	   
+      pressure_actual <= PressureRawToActual(pressure_raw, compensation_data(pressure_comp_byte_location), compensation_data(pressure_comp_byte_location + 1),
+                                             compensation_data(pressure_comp_byte_location + 2), compensation_data(pressure_comp_byte_location + 3),
+                                             compensation_data(pressure_comp_byte_location + 4), compensation_data(pressure_comp_byte_location + 5), 
+                                             compensation_data(pressure_comp_byte_location + 6), compensation_data(pressure_comp_byte_location + 7), 
+                                             compensation_data(pressure_comp_byte_location + 8), t_fine);
+      humid_actual <= HumidRawToActual(humid_raw, compensation_data(humid_comp_byte_location), compensation_data(humid_comp_byte_location + 1),
+                                       compensation_data(humid_comp_byte_location + 2), compensation_data(humid_comp_byte_location + 3), 
+                                       compensation_data(humid_comp_byte_location + 4), compensation_data(humid_comp_byte_location + 5), 
+                                       t_fine);
+      bme_output_data <= std_logic_vector(temp_actual) & std_logic_vector(pressure_actual) & std_logic_vector(humid_actual); 
+      process_data_complete <= '1';
+    else
+      process_data_complete <= '0';	 
+    end if;
   end if;
 end process;
 
@@ -301,21 +334,27 @@ timing : process (sys_clk, reset_n)
     variable counter : integer := 0;
     variable waiting_ended : boolean := false;
 begin
-  waiting_ended := cur_reader_state /= waiting and last_reader_state = waiting;
-  if wait_complete = true then
-    -- Do nothing
-  elsif counter = divider then
-    counter := 0;
-    wait_complete <= true;
-  elsif waiting_ended then
-    wait_complete <= false;
-  else 
-    counter := counter + 1;
+  if reset_n = '0' then 
+	 wait_complete <= false;
+	 counter := 0;
+  elsif rising_edge(sys_clk) then
+    waiting_ended := cur_reader_state /= waiting and last_reader_state = waiting;
+    if wait_complete = true then
+      -- Do nothing
+    elsif counter = divider then
+      counter := 0;
+      wait_complete <= true;
+    elsif waiting_ended then
+      wait_complete <= false;
+    else 
+      counter := counter + 1;
+    end if;
   end if;
 
 end process;
 
-read_compensation_data_from_BME280 : process (sys_clk, reset_n)
+-- TODO: Add writing 0x05 to 0xF2, 0x10 to 0xF5, and 0xB7 to 0xF4 in that order
+initialize_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_data_read)
     type compensation_data_reader_state is (idle, init_write, init_read, sec_write, sec_read);
     constant INIT_COMP_ADDR : std_logic_vector(7 downto 0) := x"88";
     constant SEC_COMP_ADDR  : std_logic_vector(7 downto 0) := x"E1";
