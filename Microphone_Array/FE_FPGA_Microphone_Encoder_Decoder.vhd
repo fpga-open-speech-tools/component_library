@@ -159,6 +159,7 @@ type mic_array_data is array (n_mics-1 downto 0) of std_logic_vector(mic_data_wi
 -- Workaround for a memory initialization error associated with defining an array
 -- Assignments -> Device -> Device and Pin Options -> Configuration -> Configuration Mode: Single uncompressed image with Memory Initialization
 signal mic_data_r             : mic_array_data := (others => (others => '0'));
+signal mic_data_out_r         : std_logic_vector(mic_data_width-1 downto 0) := (others => '0');
 signal channel_counter        : integer range 0 to n_mics := 0;
 signal mic_channel_r          : std_logic_vector(ch_width-1 downto 0) := (others => '0');
 signal mic_out_valid_r        : std_logic := '0';
@@ -646,7 +647,8 @@ begin
       when pulse =>
         -- Set the channel and pulse the valid 
         mic_channel_r         <= std_logic_vector(to_unsigned(channel_counter,mic_channel_r'length));
-        mic_out_valid_r   <= '1';
+        mic_data_out_r        <= mic_data_r(channel_counter);
+        mic_out_valid_r       <= '1';
         
       when low_wait =>
         -- Disable the valid signal
@@ -670,7 +672,7 @@ busy_out <= busy;
 bme_out_data    <= bme_data_r;
 bme_out_valid   <= bme_out_valid_r; 
 
-mic_out_data(8*mic_byte_width-1 downto 0)   <= mic_data_r(channel_counter);
+mic_out_data(8*mic_byte_width-1 downto 0)   <= mic_data_out_r;
 mic_out_channel                             <= mic_channel_r;
 mic_out_valid                               <= mic_out_valid_r;
 
