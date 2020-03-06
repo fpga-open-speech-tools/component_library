@@ -53,7 +53,7 @@ package FE_CPLD_BME280_Compensate_Data is
   -- dig_t2 : calibration value dig_t2 from BME 280
   -- dig_t3 : calibration value dig_t3 from BME 280
   -- Returns array of signed values, first value containing temp value and second containing t_fine
-  function TempRawToActual(temp_raw_std : std_logic_vector(temp_byte_width * 8 -1 downto 0);
+  function TempRawToActual(temp_raw_std : std_logic_vector(19 downto 0);
                                   dig_t1 : signed(calibration_byte_width * 8 - 1 downto 0);
                                   dig_t2 : signed(calibration_byte_width * 8 - 1 downto 0);
                                   dig_t3 : signed(calibration_byte_width * 8 - 1 downto 0)) 
@@ -66,7 +66,7 @@ package FE_CPLD_BME280_Compensate_Data is
   -- pressure_raw : raw presure data from BME 280
   -- dig_px : calibration value dig_px from BME 280 where x = 1 to 9
   -- t_fine     : fine temperature calibration value found during temperature compensation
-  function PressureRawToActual(pressure_raw_std : std_logic_vector(pressure_byte_width * 8 - 1 downto 0);
+  function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
                                dig_p1 : signed(calibration_byte_width * 8 - 1 downto 0);
                                dig_p2 : signed(calibration_byte_width * 8 - 1 downto 0);
                                dig_p3 : signed(calibration_byte_width * 8 - 1 downto 0);
@@ -320,7 +320,7 @@ package body FE_CPLD_BME280_Compensate_Data is
 -- dig_t2_std : calibration value dig_t2 from BME 280
 -- dig_t3_std : calibration value dig_t3 from BME 280
 -- Returns array of signed values, first value containing temp value and second containing t_fine
-function TempRawToActual(temp_raw_std : std_logic_vector(temp_byte_width * 8 -1 downto 0);
+function TempRawToActual(temp_raw_std : std_logic_vector(19 downto 0);
                                 dig_t1 : signed(calibration_byte_width * 8 - 1 downto 0);
                                 dig_t2 : signed(calibration_byte_width * 8 - 1 downto 0);
                                 dig_t3 : signed(calibration_byte_width * 8 - 1 downto 0)) 
@@ -355,7 +355,7 @@ end function;
 -- pressure_raw : raw temperature data from BME 280
 -- dig_px_std : calibration value dig_px from BME 280 where x = 1 to 9
 -- t_fine     : fine temperature calibration value found during temperature compensation
-function PressureRawToActual(pressure_raw_std : std_logic_vector(pressure_byte_width * 8 - 1 downto 0);
+function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
                              dig_p1 : signed(calibration_byte_width * 8 - 1 downto 0);
                              dig_p2 : signed(calibration_byte_width * 8 - 1 downto 0);
                              dig_p3 : signed(calibration_byte_width * 8 - 1 downto 0);

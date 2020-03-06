@@ -94,11 +94,12 @@ end record i2c_rec;
 signal read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
 signal write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => START_ADDR);
 signal read_comp_i2c : i2c_rec;
+signal initialize_BME280_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => (others => '0'));
 signal i2c_control : i2c_rec;
 
 -- TODO: Set err, etc
 -- Create states for the output state machine
-type reader_state is (  idle, write, read, process_data, waiting, init);
+type reader_state is (  idle, write, read, process_data, waiting, init, read_comp_data);
 signal last_reader_state : reader_state := idle;
 signal cur_reader_state : reader_state := idle;
 --signal nex_reader_state : reader_state := write;
@@ -106,6 +107,7 @@ signal write_complete   : std_logic := '0';
 signal read_complete   : std_logic := '0';
 signal process_data_complete   : std_logic := '0';
 signal wait_complete   : boolean := false;
+signal init_complete   : boolean := false;
 signal compensation_data_received : boolean := false;
 
 signal read_data       : std_logic_vector(63 downto 0) := (others => '0');
@@ -138,10 +140,11 @@ signal temp_actual : signed(31 downto 0);
 signal t_fine : signed(31 downto 0);
 signal pressure_actual : unsigned(31 downto 0);
 signal humid_actual    : unsigned(31 downto 0);
-
+signal bytes_written   : natural range 0 to 7 := 0;
 -- Calibration values for temperature, pressure, and humidity from the BME280
 signal compensation_data : actual_cal_reg;
-
+signal i2c_last        : std_logic := '0';
+signal i2c_byte_began : boolean := false;
 begin
 
 i2c_component : i2c_master 
@@ -165,6 +168,9 @@ port map(
 
 bme_output_error(0) <= i2c_err;
 
+i2c_last <= i2c_busy;
+i2c_byte_began <= i2c_last = '0' and i2c_busy = '1';
+
 state_management : process (sys_clk, reset_n)
 begin
   if reset_n = '0' then 
@@ -186,6 +192,10 @@ begin
           busy_out <= '0';
         end if;
       when init =>
+        if init_complete then
+          cur_reader_state <= read_comp_data;
+        end if;
+      when read_comp_data =>
         if compensation_data_received then
           cur_reader_state <= write;
         end if;
@@ -221,8 +231,10 @@ begin
   if reset_n = '0' then 
     i2c_control <= i2c_disable;
   elsif rising_edge(sys_clk) then
-    case cur_reader_state is 
+    case cur_reader_state is
         when init =>
+          i2c_control <= initialize_BME280_i2c; 
+        when read_comp_data =>
           i2c_control <= read_comp_i2c;
         when write =>
           i2c_control <= write_i2c;
@@ -242,14 +254,8 @@ begin
     write_complete <= '0';
   elsif rising_edge(sys_clk) then
     start_write:= (cur_reader_state = write) and (last_reader_state /= write);
-    if start_write then
-      --i2c_rdwr <= '0';
-      --i2c_data_write <= START_ADDR;
-      --i2c_enable <= '1';
-    elsif cur_reader_state = write then
-      if i2c_busy = '0' then
-        write_complete <= '1';
-      end if;
+    if i2c_byte_began then
+      write_complete <= '1';
     else
       write_complete <= '0';
     end if;
@@ -267,12 +273,8 @@ begin
 	 read_complete <= '0';
 	 bytes_read := 0;
   elsif rising_edge(sys_clk) then
-    start_read := cur_reader_state = read and last_reader_state /= read;
-    if start_read then
-      -- i2c_rdwr <= '1';
-      -- i2c_enable <= 1;
-    elsif cur_reader_state = read then
-      if i2c_busy = '0' then
+    if cur_reader_state = read then
+      if i2c_byte_began then
         read_data_index := read_data'length-8 * bytes_read;
         read_data(read_data_index - 1 downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
         bytes_read := bytes_read + 1;
@@ -355,7 +357,53 @@ end process;
 
 -- TODO: Add writing 0x05 to 0xF2, 0x10 to 0xF5, and 0xB7 to 0xF4 in that order
 initialize_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_data_read)
-    type compensation_data_reader_state is (idle, init_write, init_read, sec_write, sec_read);
+  type init_state is (idle, write_ctrl_hum, write_config, write_ctrl_measure, complete);
+  constant SAMPLE_RATE_X16 : std_logic_vector(2 downto 0) := "101";
+  constant NORMAL_MODE     : std_logic_vector(1 downto 0) := "11";
+  constant FILTER_16       : std_logic_vector(2 downto 0) := "100";
+  constant CTRL_HUM_ADDR   : std_logic_vector(7 downto 0) := x"F2";
+  constant CONFIG_ADDR     : std_logic_vector(7 downto 0) := x"F5";
+  constant CTRL_MEAS_ADDDR : std_logic_vector(7 downto 0) := x"F4"; 
+
+  variable byte_complete   : boolean := false;
+  
+begin
+  if reset_n = '0' then
+    initialize_BME280_i2c.data_wr <= (others => '0');
+    bytes_written <= 0;
+    init_complete <= false;
+  elsif rising_edge(sys_clk) then
+    if cur_reader_state = init then
+      if i2c_byte_began then
+        bytes_written <= bytes_written + 1;
+      end if;
+      
+      case bytes_written is 
+        when 0 =>
+          initialize_BME280_i2c.ena <= '1';
+          initialize_BME280_i2c.data_wr <= CTRL_HUM_ADDR;
+        when 1 =>
+          -- Setting humidity sampling rate, other bits do nothing
+          initialize_BME280_i2c.data_wr <= "00000" & SAMPLE_RATE_X16;
+        when 2 =>
+          initialize_BME280_i2c.data_wr <= CONFIG_ADDR;
+        when 3 => 
+          -- Setting filter coefficient, first bits leave default stand by time and last bits leave SPI disabled
+          initialize_BME280_i2c.data_wr <= "000" & FILTER_16 & "00";
+        when 4 =>
+          initialize_BME280_i2c.data_wr <= CTRL_MEAS_ADDDR;
+        when 5 =>
+          -- setting temp samping rate, pressure sampling rate, then putting device in normal mode 
+          initialize_BME280_i2c.data_wr <= SAMPLE_RATE_X16 & SAMPLE_RATE_X16 & NORMAL_MODE;
+        when others =>
+          init_complete <= true;
+        end case;
+    end if;
+  end if;
+end process;
+
+read_compensation_data_from_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_data_read)
+    type compensation_data_reader_state is (idle, init_write, init_read, sec_write, sec_read, complete);
     constant INIT_COMP_ADDR : std_logic_vector(7 downto 0) := x"88";
     constant SEC_COMP_ADDR  : std_logic_vector(7 downto 0) := x"E1";
     constant INIT_BYTES     : integer := 25;
@@ -374,50 +422,52 @@ begin
     cur_comp_data_reader_state := idle;
     read_comp_i2c <= init_write_i2c;
     bytes_read := 0;
-  else
-    case cur_comp_data_reader_state is
-      when init_write =>
-        read_comp_i2c <= init_write_i2c;
-        if i2c_busy = '0' then
-          cur_comp_data_reader_state := init_read;
-        end if;
-      when init_read =>
-        read_comp_i2c <= read_i2c;
-        if i2c_busy = '0' then
-          raw_comp_regs(bytes_read) := i2c_data_read;
-          bytes_read := bytes_read + 1;
-    
-          -- checks if bytes_read equals the number of bytes in read_data
-          all_bytes_read := bytes_read = INIT_BYTES; 
-          if(all_bytes_read) then
-            cur_comp_data_reader_state := sec_write;
+  elsif rising_edge(sys_clk) then
+    if(cur_reader_state = read_comp_data) then
+      case cur_comp_data_reader_state is
+        when init_write =>
+          read_comp_i2c <= init_write_i2c;
+          if i2c_busy = '0' then
+            cur_comp_data_reader_state := init_read;
           end if;
-        end if;
-      when sec_write =>
-        read_comp_i2c <= sec_write_i2c;
-        if i2c_busy = '0' then
-          cur_comp_data_reader_state := sec_read;
-        end if;
-      when sec_read =>
-        read_comp_i2c <= read_i2c;
-        if i2c_busy = '0' then
-          raw_comp_regs(bytes_read) := i2c_data_read;
-          bytes_read := bytes_read + 1;
-    
-          -- checks if bytes_read equals the number of bytes in read_data
-          all_bytes_read := bytes_read = INIT_BYTES + SEC_BYTES; 
-          if(all_bytes_read) then
-            cur_comp_data_reader_state := idle;
-            compensation_data_received <= true;
-            bytes_read := 0;
+        when init_read =>
+          read_comp_i2c <= read_i2c;
+          if i2c_busy = '0' then
+            raw_comp_regs(bytes_read) := i2c_data_read;
+            bytes_read := bytes_read + 1;
+          
+            -- checks if bytes_read equals the number of bytes in read_data
+            all_bytes_read := bytes_read = INIT_BYTES; 
+            if(all_bytes_read) then
+              cur_comp_data_reader_state := sec_write;
+            end if;
+          end if;
+        when sec_write =>
+          read_comp_i2c <= sec_write_i2c;
+          if i2c_busy = '0' then
+            cur_comp_data_reader_state := sec_read;
+          end if;
+        when sec_read =>
+          read_comp_i2c <= read_i2c;
+          if i2c_busy = '0' then
+            raw_comp_regs(bytes_read) := i2c_data_read;
+            bytes_read := bytes_read + 1;
+          
+            -- checks if bytes_read equals the number of bytes in read_data
+            all_bytes_read := bytes_read = INIT_BYTES + SEC_BYTES; 
+            if(all_bytes_read) then
+              cur_comp_data_reader_state := complete;
+              compensation_data_received <= true;
+              bytes_read := 0;
 
-            compensation_data <= decode_comp_registers(cal_records, raw_comp_regs);
+              compensation_data <= decode_comp_registers(cal_records, raw_comp_regs);
+            end if;
           end if;
-        end if;
-      when idle =>
-        -- Do nothing
-      when others =>
-    end case;
+        when idle =>
+          cur_comp_data_reader_state := init_write;
+        when others =>
+      end case;
+    end if;
   end if;
      
 end process;
