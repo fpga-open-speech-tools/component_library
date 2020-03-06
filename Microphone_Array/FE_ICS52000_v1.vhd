@@ -117,11 +117,14 @@ type mic_array_data is array (n_mics-1 downto 0) of std_logic_vector(avalon_data
 
 -- Workaround for a memory initialization error associated with defining an array
 signal mic_data_r             : mic_array_data := (others => (others => '0'));
+signal mic_out_data_r         : std_logic_vector(avalon_data_width-1 downto 0) := (others => '0');
 signal deser_data             : mic_array_data := (others => (others => '0'));
 signal cfg_channel_counter    : integer range 0 to n_mics := 0;
 signal channel_counter        : integer range 0 to n_mics := 0;
 signal mic_channel_r          : std_logic_vector(ch_width-1 downto 0) := (others => '0');
 signal mic_out_valid_r        : std_logic := '0';
+
+signal high_z_filler          : std_logic_vector(avalon_data_width-mic_data_width-1 downto 0) := (others => '0');
 
 -- Create the states for the deserialzier state machine
 type deser_state is (idle, mic_data_wait, read_mic_data, valid_pulse);
@@ -316,6 +319,7 @@ begin
       when idle => 
         -- Reset the channel counter
         channel_counter   <= 0;
+        cfg_channel_counter <= 0;
               
       when increment_counter =>
         -- Increment the channel counter and disable the valid
@@ -327,11 +331,11 @@ begin
           cfg_channel_counter <= cfg_channel_counter;
         end if;
         
-      
       when pulse =>
         -- Set the channel and pulse the valid 
-        mic_channel_r         <= std_logic_vector(to_unsigned(cfg_channel_counter,mic_channel_r'length));
-        mic_out_valid_r       <= cfg_data_r(channel_counter);
+        mic_out_valid_r   <= cfg_data_r(channel_counter);
+        mic_out_data_r    <= high_z_filler & mic_data_r(channel_counter)(avalon_data_width-1 downto avalon_data_width-mic_data_width);
+        mic_channel_r     <= std_logic_vector(to_unsigned(cfg_channel_counter,mic_channel_r'length));
         
       when low_wait =>
         -- Disable the valid signal
@@ -358,8 +362,7 @@ end process;
 
 mic_ws_out <= mic_ws_out_r;
 
-mic_out_data    <= mic_data_r(channel_counter)(avalon_data_width-mic_data_width-1 downto 0) & 
-                   mic_data_r(channel_counter)(avalon_data_width-1 downto avalon_data_width-mic_data_width);
+mic_out_data    <= mic_out_data_r;
 mic_out_channel <= mic_channel_r;
 mic_out_valid   <= mic_out_valid_r;
 
