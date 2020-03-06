@@ -220,6 +220,19 @@ begin
   end if;
 end process;
 
+bme_in_process : process(sys_clk,reset_n)
+begin 
+  if reset_n = '0' then 
+    bme_input_data_r <= (others => '0');
+  elsif rising_edge(sys_clk) then 
+    if bme_input_valid = '1' then 
+      bme_input_data_r <= bme_input_data;
+    else
+      bme_input_data_r <= bme_input_data_r;
+    end if;
+  end if;
+end process;
+
 -- Process to start the bit shifting 
 shift_start_process : process(serial_clk_in,reset_n)
 begin 
