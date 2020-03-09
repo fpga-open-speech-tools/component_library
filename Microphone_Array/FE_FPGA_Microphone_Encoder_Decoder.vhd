@@ -457,7 +457,7 @@ begin
       
       when read_mic_data =>
         -- Once the microphone data has been read, start transferring data over the Avalon interfaces
-        if read_bits = read_word_bits - 1 and n_mics = cur_mic then 
+        if read_bits = read_word_bits - 1 and n_mics - 1 = cur_mic then 
           cur_sdi_state <= valid_pulse;
         else
           cur_sdi_state <= read_mic_data;
