@@ -41,9 +41,10 @@ entity FE_FPGA_Microphone_Encoder_Decoder is
     mic_data_width      : integer := 24;
     bme_data_width      : integer := 64;
     rgb_data_width      : integer := 16;
-    cfg_data_width      : integer := 64;
+    cfg_data_width      : integer := 16;
     ch_width            : integer := 4;
-    n_mics              : integer := 16
+    n_mics              : integer := 16;
+    n_mics_max          : integer := 16
   );
   
   port (
@@ -142,7 +143,7 @@ signal cfg_data_r             : std_logic_vector(8*cfg_byte_width-1 downto 0) :=
 signal cfg_out_valid_r        : std_logic := '0';
 signal rgb_data_r             : std_logic_vector(8*rgb_byte_width-1 downto 0) := (others => '0');
 signal rgb_out_valid_r        : std_logic := '0';
-signal cur_mic                : integer range 0 to n_mics := 0;
+signal cur_mic                : integer range 0 to n_mics_max := 0;
 
 signal send_valid             : std_logic := '0';
 signal busy                   : std_logic := '0';
@@ -154,13 +155,13 @@ signal end_shifting           : std_logic := '0';
 signal shift_busy             : std_logic := '0';
 
 -- Avalon streaming signals
-type mic_array_data is array (n_mics-1 downto 0) of std_logic_vector(mic_data_width-1 downto 0);
+type mic_array_data is array (n_mics_max-1 downto 0) of std_logic_vector(mic_data_width-1 downto 0);
 
 -- Workaround for a memory initialization error associated with defining an array
 -- Assignments -> Device -> Device and Pin Options -> Configuration -> Configuration Mode: Single uncompressed image with Memory Initialization
 signal mic_data_r             : mic_array_data := (others => (others => '0'));
 signal mic_data_out_r         : std_logic_vector(mic_data_width-1 downto 0) := (others => '0');
-signal channel_counter        : integer range 0 to n_mics := 0;
+signal channel_counter        : integer range 0 to n_mics_max := 0;
 signal mic_channel_r          : std_logic_vector(ch_width-1 downto 0) := (others => '0');
 signal mic_out_valid_r        : std_logic := '0';
 
@@ -603,7 +604,7 @@ begin
       
       when pulse =>
         -- If the number of channels sent equals the number of mics, move to the waiting state
-        if channel_counter = n_mics - 1 then 
+        if channel_counter = n_mics_max - 1 then 
           mic_valid_state <= low_wait;
           
         -- Otherwise, increment the channel
@@ -627,7 +628,7 @@ begin
   end if;
 end process;
 
-sdi_data_valid_process : process(sys_clk,reset_n)
+mic_data_valid_process : process(sys_clk,reset_n)
 begin
   if reset_n = '0' then 
     mic_out_valid_r <= '0';

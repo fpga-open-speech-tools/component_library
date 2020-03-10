@@ -38,7 +38,7 @@ entity FE_ICS52000 is
   generic ( 
     avalon_data_width   : integer := 32;
     mic_data_width      : integer := 24;
-    cfg_data_width      : integer := 96;
+    cfg_data_width      : integer := 16;
     ch_width            : integer := 6;
     n_mics              : integer := 16;
     n_clocks            : integer := 4;
