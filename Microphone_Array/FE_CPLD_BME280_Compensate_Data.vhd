@@ -10,7 +10,7 @@ package FE_CPLD_BME280_Compensate_Data is
   constant temp_byte_width          : integer := 3;
   constant humid_byte_width         : integer := 2;
   constant pressure_byte_width      : integer := 3;
-  constant calibration_byte_width   : integer := 2;
+  constant calibration_byte_width   : integer := 4;
   constant temp_comp_byte_width     : integer := 3;
   constant pressure_comp_byte_width : integer := 9;
   constant humid_comp_byte_width    : integer := 6;
@@ -32,14 +32,16 @@ package FE_CPLD_BME280_Compensate_Data is
 
   -- Used to return both t_fine and temp_actual from TempRawToActual
   type cal_temp_vals is record
-      temp_actual : signed(31 downto 0);
-		t_fine      : signed(31 downto 0);
+    temp_actual : signed(31 downto 0);
+    t_fine      : signed(31 downto 0);
+    var1        : signed(31 downto 0);
+    var2        : signed(31 downto 0);
   end record cal_temp_vals;
   
   constant cal_reg_raw_length : integer := 32;
   constant cal_reg_raw_byte_width : integer := 1;
   constant cal_reg_length : integer := 18;
-  constant cal_reg_byte_width : integer := 2;
+  constant cal_reg_byte_width : integer := 4;
   
   type raw_cal_reg is array (cal_reg_raw_length - 1 downto 0) of std_logic_vector(cal_reg_raw_byte_width * 8 - 1 downto 0);
   -- TODO: Refactor this to be signed instead of std_logic_vector
@@ -332,18 +334,18 @@ function TempRawToActual(temp_raw_std : std_logic_vector(19 downto 0);
   variable var1        : signed(31 downto 0);
   variable var2        : signed(31 downto 0);
 begin
-  temp_raw := resize(signed(temp_raw_std), temp_raw'length);
-
-  var1 := shift_right(temp_raw, 3);
+  temp_raw := signed(resize(unsigned(temp_raw_std), temp_raw'length));
   
-  var1 := resize((shift_right(temp_raw, 3) - shift_left(dig_t1, 3)) * shift_right(dig_t2, 11), var1'length);
+  var1 := resize(shift_right((shift_right(temp_raw, 3) - shift_left(dig_t1, 1)) * dig_t2, 11), var1'length);
+  --var1 := shift_right(temp_raw, 3);
+  --var2 := shift_left(dig_t1, 1);
   var2 := resize(shift_right(
-  shift_right((shift_right(temp_raw, 4) - dig_t1) * (shift_right(temp_raw, 4) - dig_t1), 12)
-  * dig_t3, 14), var2'length); 
+    shift_right((shift_right(temp_raw, 4) - dig_t1) * (shift_right(temp_raw, 4) - dig_t1), 12)
+    * dig_t3, 14), var2'length); 
   temp_fine := var1 + var2;
   temp_actual := resize(shift_right(temp_fine * 5 + 128, 8), temp_actual'length);
 
-  results := (temp_actual => temp_actual, t_fine => temp_fine);
+  results := (temp_actual => temp_actual, t_fine => temp_fine, var1 => var1, var2 => var2);
 
   return results;
 end function;
@@ -373,7 +375,7 @@ function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
     variable var1 : signed(63 downto 0);
     variable var2 : signed(63 downto 0);
     variable p    : signed(63 downto 0);
-    variable temp_fine_64 : signed(63 downto 0);
+    variable temp_fine_64 : signed(31 downto 0);
     -- TODO: fix pressure raw being std_logic but expecting to be S32
 begin
   pressure_raw := resize(signed(pressure_raw_std), pressure_raw'length);
@@ -388,7 +390,9 @@ begin
 
   if (var1 /= 0) then
     p := resize(1048576 - pressure_raw, p'length);
-    p := resize(((shift_left(p, 31) - var2) * 3125) / var1, p'length);
+    -- Try resizing downto lower size
+     p := resize(resize(shift_right((shift_left(p, 31) - var2) * 3125, 32), 32) / resize(shift_right(var1, 32),32), p'length);
+    --p := resize(resize(((shift_left(p, 31) - var2) * 3125), 48) / resize(var1,48), p'length);
     var1 := resize(shift_right(dig_p9 * shift_right(p, 13) * shift_right(p, 13), 25), var1'length);
     var2 := resize(shift_right(dig_p8 * p, 19), var2'length);
     p := resize(shift_right(p + var1 + var2, 8) + shift_left(dig_p7, 4), p'length);
@@ -396,7 +400,7 @@ begin
   else 
 	-- TODO: handle error reporting
     -- calibration_err <= true;
-    pressure_actual := to_unsigned(0, pressure_actual'length);
+    pressure_actual := to_unsigned(1, pressure_actual'length);
   end if;
   
   return pressure_actual;
@@ -420,22 +424,25 @@ function HumidRawToActual(humid_raw_std : std_logic_vector(humid_byte_width * 8 
                           )
                           return unsigned is
     variable humid_actual : unsigned (31 downto 0);
-	  variable humid_raw    : signed(31 downto 0);
+    variable humid_raw    : signed(31 downto 0);
+    variable temp         : signed(31 downto 0);
     variable v_x1_u32r    : signed(31 downto 0);
 begin
 
   humid_raw := resize(signed(humid_raw_std), humid_raw'length);
   v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
-  v_x1_u32r := resize(shift_left(humid_raw, 14) - (shift_left(dig_h4, 20) - dig_h5 * v_x1_u32r) +
-               shift_right(to_signed(16384, 32), 15) * (
+  
+  v_x1_u32r := resize(shift_right(shift_left(humid_raw, 14) - shift_left(dig_h4, 20) - dig_h5 * v_x1_u32r +
+               to_signed(16384, 32), 15) * (
                 shift_right( 
                   (
                     shift_right(
-                      shift_right( v_x1_u32r * dig_h6, 10) * shift_right( v_x1_u32r * dig_h3, 11)
-                      + to_signed(32768, 32), 10)
+                      shift_right( v_x1_u32r * dig_h6, 10) * (shift_right( v_x1_u32r * dig_h3, 11)
+                      + to_signed(32768, 32)), 10)
                     + to_signed(2097152, 32))
                   * dig_h2 + to_signed(8192, 32), 14)
                ), v_x1_u32r'length);
+
   v_x1_u32r := resize((v_x1_u32r - shift_right(
                                         shift_right(
                                                     shift_right(v_x1_u32r, 15) * shift_right(v_x1_u32r, 15)
@@ -465,36 +472,38 @@ function decode_comp_registers(cal_decode_vals : cal_recs; cal_raw_regs : raw_ca
   variable cal_sorted    : std_logic_vector( 15 downto 0);
   variable raw_cal       : std_logic_vector( 15 downto 0);
   variable offset_length : integer;
-  variable actual_cal    : signed(15 downto 0);
+  variable offset_length_2 : integer;
+  variable actual_cal    : signed(cal_reg_byte_width * 8 - 1 downto 0);
   variable is_12bit      : boolean;
 begin
 	 for cal_ind in cal_reg_length - 1 downto 0 loop
 		temp_cal_rec := cal_decode_vals(cal_ind);
 		
 		if(temp_cal_rec.two_bytes) then 
-			raw_cal := cal_raw_regs(temp_cal_rec.offset) & cal_raw_regs( temp_cal_rec.offset + 1 );
+			raw_cal := cal_raw_regs(temp_cal_rec.offset + 1) & cal_raw_regs( temp_cal_rec.offset);
 			
-			offset_length := temp_cal_rec.bit_offsets(0) - temp_cal_rec.bit_offsets(1);
+      offset_length := temp_cal_rec.bit_offsets(0) - temp_cal_rec.bit_offsets(1);
+      offset_length_2 :=  temp_cal_rec.bit_offsets(2) - temp_cal_rec.bit_offsets(3)  + offset_length + 1;
 			-- TODO: verify this is correct
 			cal_sorted := (others => '0');
 			cal_sorted(offset_length downto 0) := raw_cal(temp_cal_rec.bit_offsets(0) downto temp_cal_rec.bit_offsets(1));
-			cal_sorted(15 downto 8) := raw_cal(temp_cal_rec.bit_offsets(2) downto temp_cal_rec.bit_offsets(3));
+			cal_sorted(offset_length_2 downto offset_length + 1) := raw_cal(temp_cal_rec.bit_offsets(2) downto temp_cal_rec.bit_offsets(3));
 			
 			if temp_cal_rec.is_signed then
 				is_12bit := temp_cal_rec.bit_offsets(0) = 11 or temp_cal_rec.bit_offsets(2) = 11;
 				if is_12bit then
-				  actual_cal := resize(signed(cal_sorted(11 downto 0)), 16);
+				  actual_cal := resize(signed(cal_sorted(11 downto 0)), cal_reg_byte_width * 8);
 				else
-				  actual_cal := signed(cal_sorted);
+				  actual_cal := resize(signed(cal_sorted), cal_reg_byte_width * 8);
 				end if;
 			else
-			  actual_cal := signed(unsigned(cal_sorted));
+			  actual_cal := signed(resize(unsigned(cal_sorted), cal_reg_byte_width * 8));
 			end if;
 		else -- cal is a single byte
 		  if temp_cal_rec.is_signed then
-		    actual_cal := resize(signed(cal_raw_regs(temp_cal_rec.offset)), 16);
+		    actual_cal := resize(signed(cal_raw_regs(temp_cal_rec.offset)), cal_reg_byte_width * 8);
 		  else
-		    actual_cal := resize(signed(unsigned(cal_raw_regs(temp_cal_rec.offset))), 16);
+		    actual_cal := signed(resize(unsigned(cal_raw_regs(temp_cal_rec.offset)), cal_reg_byte_width * 8));
 		  end if;
 		end if;
 		actual_cal_regs(cal_ind) := actual_cal;
