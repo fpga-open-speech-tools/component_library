@@ -35,14 +35,14 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 library work;
 use work.FE_CPLD_BME280_Compensate_Data.all;
+use work.i2c.all;
 
 entity FE_CPLD_BME280_I2C_Reader is 
 generic ( 
     sdo                   : std_logic := '0';      --0 if SDO is connected to ground, 1 if connected to V_DDIO
                                                    -- sets the LSB of the 7-bit i2c address
     reads_per_second      : integer := 16 ;        --reads per second from BME280
-    input_clk             : INTEGER := 50_000_000; --input clock speed from user logic in Hz
-    bus_clk               : INTEGER := 400_000);   --speed the i2c bus (scl) will run at in Hz
+    input_clk             : INTEGER := 50_000_000); --input clock speed from user logic in Hz
   
   port (
     sys_clk               : in  std_logic                     := 'X';
@@ -54,42 +54,25 @@ generic (
     bme_output_data       : out std_logic_vector(95 downto 0) := (others => '0');  -- 3 signed 32 bit words
     bme_output_valid      : out std_logic := '0';
     bme_output_error      : out std_logic_vector(1 downto 0) := (others => '0');
-    sda                   : INOUT  std_logic;                    --serial data output of i2c bus
-    scl                   : INOUT  std_logic);                   --serial clock output of i2c bus
+    i2c_ena               : out std_logic;
+    i2c_addr              : out std_logic_vector(6 downto 0);
+    i2c_rw                : out std_logic;
+    i2c_data_wr           : out std_logic_vector(7 downto 0);
+    i2c_busy              : in std_logic;
+    i2c_data_rd           : in std_logic_vector(7 downto 0);
+    i2c_ack_error         : in std_logic);                   
 
 end entity FE_CPLD_BME280_I2C_Reader;
 
 architecture FE_CPLD_BME280_I2C_Reader_arch of FE_CPLD_BME280_I2C_Reader is
 CONSTANT divider  :  INTEGER := input_clk/reads_per_second;
-component i2c_master IS
-  GENERIC(
-    input_clk : INTEGER := FE_CPLD_BME280_I2C_Reader.input_clk;  --input clock speed from user logic in Hz
-    bus_clk   : INTEGER := FE_CPLD_BME280_I2C_Reader.bus_clk);   --speed the i2c bus (scl) will run at in Hz
-  PORT(
-    clk       : IN     STD_LOGIC;                    --system clock
-    reset_n   : IN     STD_LOGIC;                    --active low reset
-    ena       : IN     STD_LOGIC;                    --latch in command
-    addr      : IN     STD_LOGIC_VECTOR(6 DOWNTO 0); --address of target slave
-    rw        : IN     STD_LOGIC;                    --'0' is write, '1' is read
-    data_wr   : IN     STD_LOGIC_VECTOR(7 DOWNTO 0); --data to write to slave
-    busy      : OUT    STD_LOGIC;                    --indicates transaction in progress
-    data_rd   : OUT    STD_LOGIC_VECTOR(7 DOWNTO 0); --data read from slave
-    ack_error : BUFFER STD_LOGIC;                    --flag if improper acknowledge from slave
-    sda       : INOUT  STD_LOGIC;                    --serial data output of i2c bus
-    scl       : INOUT  STD_LOGIC);                   --serial clock output of i2c bus
-END component;
+
 
 -- BME related constants
 constant BME320_I2C_ADDR : std_logic_vector(6 downto 0) := "111011" & sdo;
 constant START_ADDR       : std_logic_vector(7 downto 0) := x"F7"; -- memory address to start reading from on BME320
 constant BME320_num_calibration : integer := 33;
 
-type i2c_rec is record
-  ena  : std_logic;
-  addr : std_logic_vector(6 downto 0);
-  rw   : std_logic;
-  data_wr :std_logic_vector(7 downto 0);
-end record i2c_rec;
 
 signal read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
 signal write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => START_ADDR);
@@ -125,12 +108,12 @@ constant humid_byte_location      : integer := 2;
 constant pressure_byte_location   : integer := 8;
 
 -- Signals for i2c control
-signal i2c_enable : std_logic;
-signal i2c_rdwr   : std_logic;
-signal i2c_data_write : std_logic_vector(7 downto 0);
-signal i2c_busy : std_logic;
-signal i2c_data_read : std_logic_vector(7 downto 0);
-signal i2c_err : std_logic;
+-- signal i2c_enable : std_logic;
+-- signal i2c_rdwr   : std_logic;
+-- signal i2c_data_write : std_logic_vector(7 downto 0);
+-- signal i2c_busy : std_logic;
+-- signal i2c_data_read : std_logic_vector(7 downto 0);
+-- signal i2c_err : std_logic;
 
 -- Conversion variable used for pressure and humidity, assigned from temperature conversion
 signal calibration_err : boolean;
@@ -152,27 +135,9 @@ signal i2c_byte_began : boolean := false;
 signal i2c_byte_finished : boolean := false;
 begin
 
-i2c_component : i2c_master 
-generic map (
-  input_clk => FE_CPLD_BME280_I2C_Reader.input_clk,  
-  bus_clk   => FE_CPLD_BME280_I2C_Reader.bus_clk
-)
-port map(
-  clk       => sys_clk,
-  reset_n   => reset_n,
-  ena       => i2c_control.ena,
-  addr      => i2c_control.addr,
-  rw        => i2c_control.rw,
-  data_wr   => i2c_control.data_wr,
-  busy      => i2c_busy,
-  data_rd   => i2c_data_read,
-  ack_error => i2c_err,
-  sda       => FE_CPLD_BME280_I2C_Reader.sda,
-  scl       => FE_CPLD_BME280_I2C_Reader.scl
-);  
+  
 
-bme_output_error(0) <= i2c_err;
-
+bme_output_error(0) <= i2c_ack_error;
 
 
 state_management : process (sys_clk, reset_n)
@@ -240,6 +205,7 @@ begin
   if reset_n = '0' then 
     i2c_control <= i2c_disable;
   elsif rising_edge(sys_clk) then
+
     i2c_last <= i2c_busy;
     i2c_byte_began <= i2c_last = '0' and i2c_busy = '1';
     i2c_byte_finished <= i2c_last = '1' and i2c_busy = '0';
@@ -257,6 +223,14 @@ begin
     end case;
   end if;
 end process;
+
+
+i2c_ena <= i2c_control.ena;
+i2c_addr <= i2c_control.addr;
+i2c_rw   <= i2c_control.rw;
+i2c_data_wr <= i2c_control.data_wr;
+
+
 
 write_memory_address : process (sys_clk, reset_n, cur_reader_state, last_reader_state)
   -- when the state just became write
@@ -296,7 +270,7 @@ begin
         end if;
       if i2c_byte_finished then
         read_data_index := read_data'length-8 * bytes_read;
-        read_data(read_data_index - 1 downto (read_data_index - i2c_data_read'length)) <= i2c_data_read;
+        read_data(read_data_index - 1 downto (read_data_index - i2c_data_rd'length)) <= i2c_data_rd;
         bytes_read := bytes_read + 1;
   
         -- checks if bytes_read equals the number of bytes in read_data
@@ -382,7 +356,7 @@ begin
 end process;
 
 -- TODO: Add writing 0x05 to 0xF2, 0x10 to 0xF5, and 0xB7 to 0xF4 in that order
-initialize_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_data_read)
+initialize_BME280 : process (sys_clk, reset_n)
   type init_state is (idle, write_ctrl_hum, write_config, write_ctrl_measure, complete);
   constant SAMPLE_RATE_X16 : std_logic_vector(2 downto 0) := "101";
   constant NORMAL_MODE     : std_logic_vector(1 downto 0) := "11";
@@ -429,7 +403,7 @@ begin
   end if;
 end process;
 
-read_compensation_data_from_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_data_read)
+read_compensation_data_from_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_data_rd)
     type compensation_data_reader_state is (idle, init_write, init_read, sec_write, sec_read, complete);
     constant INIT_COMP_ADDR : std_logic_vector(7 downto 0) := x"88";
     constant SEC_COMP_ADDR  : std_logic_vector(7 downto 0) := x"E1";
@@ -465,7 +439,7 @@ begin
             read_comp_i2c.ena <= '0';
           end if;
           if i2c_byte_finished then
-            raw_comp_regs(bytes_read) := i2c_data_read;
+            raw_comp_regs(bytes_read) := i2c_data_rd;
             bytes_read := bytes_read + 1;
             if(last_byte_to_read and skip_A0) then
               bytes_read := bytes_read - 1;
@@ -491,7 +465,7 @@ begin
             read_comp_i2c.ena <= '0';
           end if;
           if i2c_byte_finished then
-            raw_comp_regs(bytes_read) := i2c_data_read;
+            raw_comp_regs(bytes_read) := i2c_data_rd;
             bytes_read := bytes_read + 1;
           
             -- checks if bytes_read equals the number of bytes in read_data
