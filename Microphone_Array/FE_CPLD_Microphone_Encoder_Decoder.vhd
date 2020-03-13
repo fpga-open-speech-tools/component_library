@@ -42,7 +42,7 @@ entity FE_CPLD_Microphone_Encoder_Decoder is
     mic_data_width      : integer := 24;
     bme_data_width      : integer := 64;
     rgb_data_width      : integer := 16;
-    cfg_data_width      : integer := 64;
+    cfg_data_width      : integer := 16;
     ch_width            : integer := 4;
     n_mics              : integer := 16
   );
@@ -103,7 +103,7 @@ signal temp_byte_width          : integer := 3;
 signal humid_byte_width         : integer := 2;
 signal pressure_byte_width      : integer := 3;
 signal mic_byte_width           : integer := 3;
-signal cfg_byte_width           : integer := 8;
+signal cfg_byte_width           : integer := 2;
 signal rgb_byte_width           : integer := 2;
 
 -- BME word division definitions
@@ -133,7 +133,7 @@ signal packet_counter         : unsigned(31 downto 0) := (others => '0');
 signal sdo_mics               : integer range 0 to 64 := 16;
 
 -- TODO change the "trigger" to start shifting
-signal channel_trigger        : std_logic_vector(ch_width-1 downto 0) := (others => '0');
+signal channel_trigger        : std_logic_vector(ch_width-1 downto 0) := std_logic_vector(to_unsigned(1,ch_width));
 
 
 -- Deserialization signals
@@ -210,12 +210,27 @@ begin
     mic_input_data_r <= (others => (others => '0'));
   elsif rising_edge(sys_clk) then 
     -- Accept new data only when the valid is asserted
+    --if mic_input_valid = '1' and busy = '0' then 
     if mic_input_valid = '1' then 
       mic_input_data_r(to_integer(unsigned(mic_input_channel))) <= mic_input_data;
       
     -- Otherwise, reset the write enable and keep the current data
     else
       mic_input_data_r <= mic_input_data_r;
+    end if;
+  end if;
+end process;
+
+bme_in_process : process(sys_clk,reset_n)
+begin 
+  if reset_n = '0' then 
+    bme_input_data_r <= (others => '0');
+  elsif rising_edge(sys_clk) then 
+    --if bme_input_valid = '1' and busy = '0'  then 
+    if bme_input_valid = '1'  then 
+      bme_input_data_r <= bme_input_data;
+    else
+      bme_input_data_r <= bme_input_data_r;
     end if;
   end if;
 end process;
@@ -301,7 +316,7 @@ begin
         cur_sdo_state <= load_shift_reg;
         
         -- If the last mic data hasn't been loaded, keep loading the mics
-        if mic_counter - 1 < sdo_mics then 
+        if mic_counter < sdo_mics - 1 then 
           next_sdo_state <= load_mics;
         
         -- Otherwise, go idle after the transfer
