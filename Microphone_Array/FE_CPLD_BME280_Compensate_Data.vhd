@@ -89,16 +89,34 @@ package FE_CPLD_BME280_Compensate_Data is
   -- humid_raw : raw humidity data from BME 280
   -- dig_hx : calibration value dig_hx from BME 280 where x = 1 to 6
   -- t_fine     : fine temperature calibration value found during temperature compensation
-  function HumidRawToActual(humid_raw_std : std_logic_vector(humid_byte_width * 8 -1 downto 0);
-                            dig_h1 : signed(calibration_byte_width * 8 - 1 downto 0);
-                            dig_h2 : signed(calibration_byte_width * 8 - 1 downto 0);
-                            dig_h3 : signed(calibration_byte_width * 8 - 1 downto 0);
-                            dig_h4 : signed(calibration_byte_width * 8 - 1 downto 0);
-                            dig_h5 : signed(calibration_byte_width * 8 - 1 downto 0);
-                            dig_h6 : signed(calibration_byte_width * 8 - 1 downto 0);
-                            t_fine     : signed(31 downto 0)
-                            )
-                            return unsigned;
+  -- function HumidRawToActual(humid_raw_std : std_logic_vector(humid_byte_width * 8 -1 downto 0);
+  --                           dig_h1 : signed(calibration_byte_width * 8 - 1 downto 0);
+  --                           dig_h2 : signed(calibration_byte_width * 8 - 1 downto 0);
+  --                           dig_h3 : signed(calibration_byte_width * 8 - 1 downto 0);
+  --                           dig_h4 : signed(calibration_byte_width * 8 - 1 downto 0);
+  --                           dig_h5 : signed(calibration_byte_width * 8 - 1 downto 0);
+  --                           dig_h6 : signed(calibration_byte_width * 8 - 1 downto 0);
+  --                           t_fine     : signed(31 downto 0)
+  --                           )
+  --                           return unsigned;
+
+  procedure HumidRawToActual( 
+    variable humid_raw_std  : in std_logic_vector(humid_byte_width * 8 -1 downto 0);
+    signal dig_h1         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h2         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h3         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h4         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h5         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h6         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal t_fine         : in signed(31 downto 0);
+    variable state_in     : in integer;
+    variable temp_in      : in signed(31 downto 0);
+    variable temp2_in     : in signed(31 downto 0);
+    variable state_out    : out integer;
+    variable temp_out     : out signed(31 downto 0);
+    variable temp2_out    : out signed(31 downto 0);
+    signal humid_actual   : out unsigned(31 downto 0)
+  );
 
 -- Convert raw calibration register values to actual compensation values
 -- Returns array of the 18 compensation values converted to signed
@@ -357,6 +375,55 @@ end function;
 -- pressure_raw : raw temperature data from BME 280
 -- dig_px_std : calibration value dig_px from BME 280 where x = 1 to 9
 -- t_fine     : fine temperature calibration value found during temperature compensation
+-- function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
+--                              dig_p1 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p2 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p3 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p4 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p5 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p6 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p7 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p8 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              dig_p9 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                              t_fine     : signed(31 downto 0)
+--                              )
+--                              return unsigned is
+--     variable pressure_actual : unsigned (31 downto 0);
+-- 	  variable pressure_raw    : signed (31 downto 0);
+--     variable var1 : signed(63 downto 0);
+--     variable var2 : signed(63 downto 0);
+--     variable p    : signed(63 downto 0);
+--     variable temp_fine_64 : signed(31 downto 0);
+--     -- TODO: fix pressure raw being std_logic but expecting to be S32
+-- begin
+--   pressure_raw := resize(signed(pressure_raw_std), pressure_raw'length);
+--   temp_fine_64 := resize(t_fine, temp_fine_64'length);
+
+--   var1 := temp_fine_64 - to_signed(128000, var1'length);
+--   var2 := resize(var1 * var1 * dig_p6, var2'length);
+--   var2 := resize(var2 + shift_left(var1 * dig_p5, 17), var2'length);
+--   var2 := var2 + shift_left(dig_p4, 35);
+--   var1 := resize(shift_right(var1 * var1 * dig_p3, 8) + shift_left(var1 * dig_p2, 12), var1'length);
+--   var1 := resize(shift_right((shift_left(to_signed(1, 64), 47) + var1) * dig_p1, 33), var1'length);
+
+--   if (var1 /= 0) then
+--     p := resize(1048576 - pressure_raw, p'length);
+--     -- Try resizing downto lower size
+--      p := resize(resize(shift_right((shift_left(p, 31) - var2) * 3125, 32), 32) / resize(shift_right(var1, 32),32), p'length);
+--     --p := resize(resize(((shift_left(p, 31) - var2) * 3125), 48) / resize(var1,48), p'length);
+--     var1 := resize(shift_right(dig_p9 * shift_right(p, 13) * shift_right(p, 13), 25), var1'length);
+--     var2 := resize(shift_right(dig_p8 * p, 19), var2'length);
+--     p := resize(shift_right(p + var1 + var2, 8) + shift_left(dig_p7, 4), p'length);
+--     pressure_actual := resize(unsigned(p), pressure_actual'length);
+--   else 
+-- 	-- TODO: handle error reporting
+--     -- calibration_err <= true;
+--     pressure_actual := to_unsigned(1, pressure_actual'length);
+--   end if;
+  
+--   return pressure_actual;
+-- end function;
+
 function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
                              dig_p1 : signed(calibration_byte_width * 8 - 1 downto 0);
                              dig_p2 : signed(calibration_byte_width * 8 - 1 downto 0);
@@ -372,31 +439,36 @@ function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
                              return unsigned is
     variable pressure_actual : unsigned (31 downto 0);
 	  variable pressure_raw    : signed (31 downto 0);
-    variable var1 : signed(63 downto 0);
-    variable var2 : signed(63 downto 0);
-    variable p    : signed(63 downto 0);
-    variable temp_fine_64 : signed(31 downto 0);
+    variable var1 : signed(31 downto 0);
+    variable var2 : signed(31 downto 0);
+    variable p    : unsigned(31 downto 0);
+    --variable temp_fine_64 : signed(31 downto 0);
     -- TODO: fix pressure raw being std_logic but expecting to be S32
 begin
   pressure_raw := resize(signed(pressure_raw_std), pressure_raw'length);
-  temp_fine_64 := resize(t_fine, temp_fine_64'length);
+  --temp_fine_64 := resize(t_fine, temp_fine_64'length);
 
-  var1 := temp_fine_64 - to_signed(128000, var1'length);
-  var2 := resize(var1 * var1 * dig_p6, var2'length);
-  var2 := resize(var2 + shift_left(var1 * dig_p5, 17), var2'length);
-  var2 := var2 + shift_left(dig_p4, 35);
-  var1 := resize(shift_right(var1 * var1 * dig_p3, 8) + shift_left(var1 * dig_p2, 12), var1'length);
-  var1 := resize(shift_right((shift_left(to_signed(1, 64), 47) + var1) * dig_p1, 33), var1'length);
+  var1 := shift_right(t_fine, 1) - to_signed(64000, var1'length);
+  var2 := resize(shift_right(shift_right(var1, 2) * shift_right(var1, 2), 11) * dig_p6, var2'length);
+  var2 := resize(var2 + shift_right(var1 * dig_p5, 1), var2'length);
+  var2 := shift_right(var2, 2) + shift_right(dig_p4, 16);
+  var1 := resize(shift_right(shift_right(shift_right(shift_right(var1, 2) * shift_right(var1, 2), 13) * dig_p3, 3) + shift_right(var1 * dig_p2, 1), 18), var1'length);
+  var1 := resize(shift_right((to_signed(32768, 32) + var1) * dig_p1, 15), var1'length);
 
   if (var1 /= 0) then
-    p := resize(1048576 - pressure_raw, p'length);
-    -- Try resizing downto lower size
-     p := resize(resize(shift_right((shift_left(p, 31) - var2) * 3125, 32), 32) / resize(shift_right(var1, 32),32), p'length);
-    --p := resize(resize(((shift_left(p, 31) - var2) * 3125), 48) / resize(var1,48), p'length);
-    var1 := resize(shift_right(dig_p9 * shift_right(p, 13) * shift_right(p, 13), 25), var1'length);
-    var2 := resize(shift_right(dig_p8 * p, 19), var2'length);
-    p := resize(shift_right(p + var1 + var2, 8) + shift_left(dig_p7, 4), p'length);
-    pressure_actual := resize(unsigned(p), pressure_actual'length);
+    p := resize(unsigned(1048576 - pressure_raw - shift_right(var2, 12)) * 3125, p'length);
+    
+    if (p < x"80000000") then
+      --p := shift_right(p, 1) / unsigned(var1);
+    else
+      --p := resize((p / unsigned(var1)) * 2, p'length);
+    end if;
+    --p := resize(resize(shift_right((shift_left(p, 31) - var2) * 3125, 32), 32) / resize(shift_right(var1, 32),32), p'length);
+
+    var1 := resize(shift_right(dig_p9 * signed(shift_right(shift_right(p, 3) * shift_right(p, 3), 13)), 12), var1'length);
+    var2 := resize(shift_right(dig_p8 * signed(shift_right(p, 2)), 13), var2'length);
+    p := resize(unsigned(signed(p) + shift_right(var1 + var2 + dig_p7, 4)), p'length);
+    pressure_actual := p;
   else 
 	-- TODO: handle error reporting
     -- calibration_err <= true;
@@ -406,6 +478,7 @@ begin
   return pressure_actual;
 end function;
 
+
 -- Convert pressure from raw value to actual value
 -- Returns pressure in %RH in Q22.10 format (22 integer bits and 10 fractional bits).
 -- Output value of “47445” represents 47445/1024 = 46.333 %RH
@@ -413,51 +486,137 @@ end function;
 -- pressure_raw : raw temperature data from BME 280
 -- dig_px_std : calibration value dig_px from BME 280 where x = 1 to 6
 -- t_fine     : fine temperature calibration value found during temperature compensation
-function HumidRawToActual(humid_raw_std : std_logic_vector(humid_byte_width * 8 -1 downto 0);
-                          dig_h1 : signed(calibration_byte_width * 8 - 1 downto 0);
-                          dig_h2 : signed(calibration_byte_width * 8 - 1 downto 0);
-                          dig_h3 : signed(calibration_byte_width * 8 - 1 downto 0);
-                          dig_h4 : signed(calibration_byte_width * 8 - 1 downto 0);
-                          dig_h5 : signed(calibration_byte_width * 8 - 1 downto 0);
-                          dig_h6 : signed(calibration_byte_width * 8 - 1 downto 0);
-                          t_fine     : signed(31 downto 0)
-                          )
-                          return unsigned is
-    variable humid_actual : unsigned (31 downto 0);
+-- function HumidRawToActual(humid_raw_std : std_logic_vector(humid_byte_width * 8 -1 downto 0);
+--                           dig_h1 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                           dig_h2 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                           dig_h3 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                           dig_h4 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                           dig_h5 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                           dig_h6 : signed(calibration_byte_width * 8 - 1 downto 0);
+--                           t_fine     : signed(31 downto 0)
+--                           )
+--                           return unsigned is
+--     variable humid_actual : unsigned (31 downto 0);
+--     variable humid_raw    : signed(31 downto 0);
+--     variable temp         : signed(31 downto 0);
+--     variable v_x1_u32r    : signed(31 downto 0);
+-- begin
+
+--   humid_raw := resize(signed(humid_raw_std), humid_raw'length);
+--   v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
+  
+--   v_x1_u32r := resize(shift_right(shift_left(humid_raw, 14) - shift_left(dig_h4, 20) - dig_h5 * v_x1_u32r +
+--                to_signed(16384, 32), 15) * (
+--                 shift_right( 
+--                   resize(
+--                     shift_right(
+--                       resize(shift_right( v_x1_u32r * dig_h6, 10), 32) * resize((shift_right( v_x1_u32r * dig_h3, 11)
+--                       + to_signed(32768, 32)), 32), 10)
+--                     + to_signed(2097152, 32), 32)
+--                   * dig_h2 + to_signed(8192, 32), 14)
+--                ), v_x1_u32r'length);
+
+--   v_x1_u32r := resize((v_x1_u32r - shift_right(
+--                                         shift_right(
+--                                                     shift_right(v_x1_u32r, 15) * shift_right(v_x1_u32r, 15)
+--                                                     , 7) * dig_h1
+--                                         , 4)
+--                ), v_x1_u32r'length);
+--   if v_x1_u32r < 0 then
+--     v_x1_u32r := to_signed(0, v_x1_u32r'length);
+--   elsif v_x1_u32r > 419430400 then
+--     v_x1_u32r :=  to_signed(419430400, v_x1_u32r'length);
+--   end if;
+  
+--   humid_actual := unsigned(shift_right(v_x1_u32r, 12));
+--   return humid_actual;
+-- end function;
+
+procedure HumidRawToActual( 
+    variable humid_raw_std  : in std_logic_vector(humid_byte_width * 8 -1 downto 0);
+    signal dig_h1         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h2         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h3         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h4         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h5         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h6         : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal t_fine         : in signed(31 downto 0);
+    variable state_in     : in integer;
+    variable temp_in      : in signed(31 downto 0);
+    variable temp2_in     : in signed(31 downto 0);
+    variable state_out    : out integer;
+    variable temp_out     : out signed(31 downto 0);
+    variable temp2_out    : out signed(31 downto 0);
+    signal humid_actual   : out unsigned(31 downto 0)
+  ) is
     variable humid_raw    : signed(31 downto 0);
-    variable temp         : signed(31 downto 0);
     variable v_x1_u32r    : signed(31 downto 0);
-begin
+  begin
 
-  humid_raw := resize(signed(humid_raw_std), humid_raw'length);
-  v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
-  
-  v_x1_u32r := resize(shift_right(shift_left(humid_raw, 14) - shift_left(dig_h4, 20) - dig_h5 * v_x1_u32r +
-               to_signed(16384, 32), 15) * (
-                shift_right( 
-                  (
-                    shift_right(
-                      shift_right( v_x1_u32r * dig_h6, 10) * (shift_right( v_x1_u32r * dig_h3, 11)
-                      + to_signed(32768, 32)), 10)
-                    + to_signed(2097152, 32))
-                  * dig_h2 + to_signed(8192, 32), 14)
-               ), v_x1_u32r'length);
+    humid_raw := resize(signed(humid_raw_std), humid_raw'length);
+    
+    case state_in is
+      when 0 =>
+        v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
+        temp_out := v_x1_u32r;
+      when 1 =>
+        v_x1_u32r := temp_in;
+        temp_out := resize((shift_right( v_x1_u32r * dig_h3, 11)
+        + to_signed(32768, 32)), 32);
+        temp2_out := resize(shift_right( v_x1_u32r * dig_h6, 10), 32);
+        
+      when 2 =>
+        --v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
+        temp_out := resize(temp2_in * temp_in, 32);
+        -- temp := resize(
+        --   shift_right(
+        --     resize(shift_right( v_x1_u32r * dig_h6, 10), 32) * temp, 10)
+        --   + to_signed(2097152, 32), 32);
+        -- -- v_x1_u32r := resize(shift_right(shift_left(humid_raw, 14) - shift_left(dig_h4, 20) - dig_h5 * v_x1_u32r +
+        -- --             to_signed(16384, 32), 15) * (
+        -- --               shift_right( 
+        -- --                 temp
+        -- --                 * dig_h2 + to_signed(8192, 32), 14)
+        -- --             ), v_x1_u32r'length);
+        -- temp := v_x1_u32r;
+      when 3 =>
+        v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
+        temp_out := resize(shift_right(temp_in, 10) + to_signed(2097152, 32), 32);
+        -- v_x1_u32r := resize(shift_right(shift_left(humid_raw, 14) - shift_left(dig_h4, 20) - dig_h5 * v_x1_u32r +
+        --             to_signed(16384, 32), 15) * (
+        --               shift_right( 
+        --                 temp
+        --                 * dig_h2 + to_signed(8192, 32), 14)
+        --             ), v_x1_u32r'length);
+        
+      when 4 =>
+        v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
+        temp_out := resize(shift_right(temp_in * dig_h2 + to_signed(8192, 32), 14), temp_out'length);
+        temp2_out := resize(shift_right(shift_left(humid_raw, 14) - shift_left(dig_h4, 20) - dig_h5 * v_x1_u32r +
+        to_signed(16384, 32), 15), temp2_out'length);
+      when 5 =>
+        v_x1_u32r := t_fine - to_signed(76800, t_fine'length);
+        v_x1_u32r := resize( temp2_in * temp_in, v_x1_u32r'length);
+        temp_out := v_x1_u32r;
+      when 6 =>
+        v_x1_u32r := temp_in;
+        
+        if v_x1_u32r < 0 then
+          v_x1_u32r := to_signed(0, v_x1_u32r'length);
+        elsif v_x1_u32r > 419430400 then
+          v_x1_u32r :=  to_signed(419430400, v_x1_u32r'length);
+        end if;
+        temp_out := v_x1_u32r;
+      when 7 =>
+        v_x1_u32r := temp_in;
+        temp_out := shift_right(v_x1_u32r, 12);
+        humid_actual <= unsigned(shift_right(v_x1_u32r, 12));
+      when others =>
+        -- do nothing
+    end case;
+    state_out := state_in + 1;
 
-  v_x1_u32r := resize((v_x1_u32r - shift_right(
-                                        shift_right(
-                                                    shift_right(v_x1_u32r, 15) * shift_right(v_x1_u32r, 15)
-                                                    , 7) * dig_h1
-                                        , 4)
-               ), v_x1_u32r'length);
-  if v_x1_u32r < 0 then
-    v_x1_u32r := to_signed(0, v_x1_u32r'length);
-  elsif v_x1_u32r > 419430400 then
-    v_x1_u32r :=  to_signed(419430400, v_x1_u32r'length);
-  end if;
-  
-  humid_actual := unsigned(shift_right(v_x1_u32r, 12));
-  return humid_actual;
-end function;
+  end procedure;
 
 -- Convert raw calibration register values to actual compensation values
 -- Returns array of the 18 compensation values converted to signed

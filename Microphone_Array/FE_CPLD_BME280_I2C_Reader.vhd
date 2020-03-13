@@ -67,6 +67,17 @@ end entity FE_CPLD_BME280_I2C_Reader;
 architecture FE_CPLD_BME280_I2C_Reader_arch of FE_CPLD_BME280_I2C_Reader is
 CONSTANT divider  :  INTEGER := input_clk/reads_per_second;
 
+-- COMPONENT test IS
+-- 	PORT
+-- 	(
+-- 		clken		: IN STD_LOGIC ;
+-- 		clock		: IN STD_LOGIC ;
+-- 		denom		: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+-- 		numer		: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+-- 		quotient		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+-- 		remain		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
+-- 	);
+-- END COMPONENT test;
 
 -- BME related constants
 constant BME320_I2C_ADDR : std_logic_vector(6 downto 0) := "111011" & sdo;
@@ -134,6 +145,15 @@ signal i2c_last        : std_logic := '1';
 signal i2c_byte_began : boolean := false;
 signal i2c_byte_finished : boolean := false;
 begin
+
+  -- test_inst : test PORT MAP (
+	-- 	clken	 => '1'',
+	-- 	clock	 => sys_clk,
+	-- 	denom	 => denom_sig,
+	-- 	numer	 => numer_sig,
+	-- 	quotient	 => quotient_sig,
+	-- 	remain	 => remain_sig
+	-- );
 
   
 
@@ -292,6 +312,10 @@ process_data_from_BME320 : process (sys_clk, reset_n)
   variable pressure_raw : std_logic_vector(pressure_bit_width - 1 downto 0);
   variable humid_raw    : std_logic_vector(humid_bit_width - 1 downto 0);
   variable temp_comp_results : cal_temp_vals;
+  variable state : integer range 0 to 15 := 0;
+  variable humid_temp : signed(31 downto 0);
+  variable humid_temp2 : signed(31 downto 0);
+  variable humid_calc_state : integer;
 begin
   if reset_n = '0' then 
 	 temp_actual     <= (others => '0');
@@ -302,32 +326,49 @@ begin
     bme_output_data <= std_logic_vector(compensation_data(humid_comp_byte_location + 1)) & std_logic_vector(compensation_data(humid_comp_byte_location + 5)) & std_logic_vector(humid_actual); 
   elsif rising_edge(sys_clk) then
     if cur_reader_state = process_data then
-      temp_raw := read_data(temp_byte_location * 8 - 1         downto (temp_byte_location * 8 - temp_bit_width));
-      pressure_raw := read_data(pressure_byte_location * 8 - 1 downto (pressure_byte_location * 8 - pressure_bit_width));
-      humid_raw := read_data(humid_byte_location * 8 - 1       downto (humid_byte_location * 8 - humid_bit_width));
-  
-      temp_comp_results := TempRawToActual(temp_raw, compensation_data(temp_comp_byte_location), 
-                                           compensation_data(temp_comp_byte_location + 1), compensation_data(temp_comp_byte_location + 2));
-	   temp_actual <= temp_comp_results.temp_actual;
-     t_fine      <= temp_comp_results.t_fine;
-     var1_s      <= temp_comp_results.var1;
-     var2_s      <= temp_comp_results.var2;
-	   
-      pressure_actual <= PressureRawToActual(pressure_raw, compensation_data(pressure_comp_byte_location), compensation_data(pressure_comp_byte_location + 1),
-                                             compensation_data(pressure_comp_byte_location + 2), compensation_data(pressure_comp_byte_location + 3),
-                                             compensation_data(pressure_comp_byte_location + 4), compensation_data(pressure_comp_byte_location + 5), 
-                                             compensation_data(pressure_comp_byte_location + 6), compensation_data(pressure_comp_byte_location + 7), 
-                                             compensation_data(pressure_comp_byte_location + 8), t_fine);
-      humid_actual <= HumidRawToActual(humid_raw, compensation_data(humid_comp_byte_location), compensation_data(humid_comp_byte_location + 1),
-                                       compensation_data(humid_comp_byte_location + 2), compensation_data(humid_comp_byte_location + 3), 
-                                       compensation_data(humid_comp_byte_location + 4), compensation_data(humid_comp_byte_location + 5), 
-                                       t_fine);
-      temp_raw_std <= temp_raw;
-      bme_output_data <= std_logic_vector(compensation_data(14)) & std_logic_vector(temp_actual) & std_logic_vector(humid_actual); 
-      --bme_output_data <= std_logic_vector(t_fine) & std_logic_vector(pressure_actual) & std_logic_vector(var2_s); 
-      process_data_complete <= '1';
+      case state is
+        when 0 to 4 =>
+          temp_raw := read_data(temp_byte_location * 8 - 1         downto (temp_byte_location * 8 - temp_bit_width));
+          pressure_raw := read_data(pressure_byte_location * 8 - 1 downto (pressure_byte_location * 8 - pressure_bit_width));
+          humid_raw := read_data(humid_byte_location * 8 - 1       downto (humid_byte_location * 8 - humid_bit_width));
+      
+          temp_comp_results := TempRawToActual(temp_raw, compensation_data(temp_comp_byte_location), 
+                                              compensation_data(temp_comp_byte_location + 1), compensation_data(temp_comp_byte_location + 2));
+          temp_actual <= temp_comp_results.temp_actual;
+          t_fine      <= temp_comp_results.t_fine;
+          var1_s      <= temp_comp_results.var1;
+          var2_s      <= temp_comp_results.var2;
+          state := state + 1;
+     
+        when 5 =>
+          pressure_actual <= PressureRawToActual(pressure_raw, compensation_data(pressure_comp_byte_location), compensation_data(pressure_comp_byte_location + 1),
+                                                compensation_data(pressure_comp_byte_location + 2), compensation_data(pressure_comp_byte_location + 3),
+                                                compensation_data(pressure_comp_byte_location + 4), compensation_data(pressure_comp_byte_location + 5), 
+                                                compensation_data(pressure_comp_byte_location + 6), compensation_data(pressure_comp_byte_location + 7), 
+                                                compensation_data(pressure_comp_byte_location + 8), t_fine);
+          state := state + 1;
+          humid_calc_state := 0;
+        when 6 => 
+          HumidRawToActual(humid_raw, compensation_data(humid_comp_byte_location), compensation_data(humid_comp_byte_location + 1),
+                                          compensation_data(humid_comp_byte_location + 2), compensation_data(humid_comp_byte_location + 3), 
+                                          compensation_data(humid_comp_byte_location + 4), compensation_data(humid_comp_byte_location + 5), 
+                                          t_fine, humid_calc_state, humid_temp, humid_temp2, humid_calc_state, humid_temp, humid_temp2, humid_actual);
+          if(humid_calc_state > 7) then
+            state := state + 1;
+          end if;
+        when 7 =>
+          temp_raw_std <= temp_raw;
+          pressure_actual <= (others => 0);
+          bme_output_data <= std_logic_vector(temp_actual) & std_logic_vector(humid_actual) & std_logic_vector(pressure_actual); 
+          --bme_output_data <= std_logic_vector(t_fine) & std_logic_vector(pressure_actual) & std_logic_vector(var2_s); 
+          process_data_complete <= '1';
+          state := state + 1;
+        when others =>
+          -- Do nothing
+      end case;
     else
       process_data_complete <= '0';	 
+      state := 0;
     end if;
   end if;
 end process;
