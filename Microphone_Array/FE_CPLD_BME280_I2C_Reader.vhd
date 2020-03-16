@@ -67,17 +67,6 @@ end entity FE_CPLD_BME280_I2C_Reader;
 architecture FE_CPLD_BME280_I2C_Reader_arch of FE_CPLD_BME280_I2C_Reader is
 CONSTANT divider  :  INTEGER := input_clk/reads_per_second;
 
--- COMPONENT test IS
--- 	PORT
--- 	(
--- 		clken		: IN STD_LOGIC ;
--- 		clock		: IN STD_LOGIC ;
--- 		denom		: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
--- 		numer		: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
--- 		quotient		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
--- 		remain		: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
--- 	);
--- END COMPONENT test;
 
 -- BME related constants
 constant BME320_I2C_ADDR : std_logic_vector(6 downto 0) := "111011" & sdo;
@@ -91,7 +80,7 @@ signal read_comp_i2c : i2c_rec;
 signal initialize_BME280_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => (others => '0'));
 signal i2c_control : i2c_rec;
 
--- TODO: Set err, etc
+
 -- Create states for the output state machine
 type reader_state is (  idle, write, read, process_data, waiting, init, read_comp_data);
 signal last_reader_state : reader_state := waiting;
@@ -104,6 +93,7 @@ signal wait_complete   : boolean := false;
 signal init_complete   : boolean := false;
 signal compensation_data_received : boolean := false;
 
+-- Contains the adc values for temp, humidity, and pressure
 signal read_data       : std_logic_vector(63 downto 0) := (others => '0');
 
 
@@ -117,14 +107,6 @@ constant calibration_byte_width   : integer := 2;
 constant temp_byte_location       : integer := 5;
 constant humid_byte_location      : integer := 2;
 constant pressure_byte_location   : integer := 8;
-
--- Signals for i2c control
--- signal i2c_enable : std_logic;
--- signal i2c_rdwr   : std_logic;
--- signal i2c_data_write : std_logic_vector(7 downto 0);
--- signal i2c_busy : std_logic;
--- signal i2c_data_read : std_logic_vector(7 downto 0);
--- signal i2c_err : std_logic;
 
 -- Conversion variable used for pressure and humidity, assigned from temperature conversion
 signal calibration_err : boolean;
@@ -203,14 +185,16 @@ begin
         end if;
       when process_data =>
         if process_data_complete = '1' then
-          if continuous = '1' then
+          if continuous = '1' and enable = '1' then
             cur_reader_state <= waiting;
           else
             cur_reader_state <= idle;
           end if;
         end if;
       when waiting =>
-        if wait_complete then
+        busy_out <= '0';
+        if wait_complete and i2c_busy = '0' then
+          busy_out <= '1';
           cur_reader_state <= write;
         end if;
       when others => 
@@ -347,6 +331,7 @@ begin
                                                 compensation_data(pressure_comp_byte_location + 6), compensation_data(pressure_comp_byte_location + 7), 
                                                 compensation_data(pressure_comp_byte_location + 8), t_fine);
           state := state + 1;
+          pressure_actual <= (others => '0');
           humid_calc_state := 0;
         when 6 => 
           HumidRawToActual(humid_raw, compensation_data(humid_comp_byte_location), compensation_data(humid_comp_byte_location + 1),
@@ -358,7 +343,7 @@ begin
           end if;
         when 7 =>
           temp_raw_std <= temp_raw;
-          pressure_actual <= (others => 0);
+          bme_output_valid <= '1';
           bme_output_data <= std_logic_vector(temp_actual) & std_logic_vector(humid_actual) & std_logic_vector(pressure_actual); 
           --bme_output_data <= std_logic_vector(t_fine) & std_logic_vector(pressure_actual) & std_logic_vector(var2_s); 
           process_data_complete <= '1';
@@ -367,6 +352,7 @@ begin
           -- Do nothing
       end case;
     else
+      bme_output_valid <= '0';
       process_data_complete <= '0';	 
       state := 0;
     end if;
@@ -396,7 +382,6 @@ begin
 
 end process;
 
--- TODO: Add writing 0x05 to 0xF2, 0x10 to 0xF5, and 0xB7 to 0xF4 in that order
 initialize_BME280 : process (sys_clk, reset_n)
   type init_state is (idle, write_ctrl_hum, write_config, write_ctrl_measure, complete);
   constant SAMPLE_RATE_X16 : std_logic_vector(2 downto 0) := "101";
