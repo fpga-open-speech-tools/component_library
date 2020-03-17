@@ -40,7 +40,7 @@ set_fileset_property QUARTUS_SYNTH TOP_LEVEL FE_CPLD_BME280_I2C_Reader
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file FE_CPLD_BME280_I2C_Reader.vhd VHDL PATH FE_CPLD_BME280_I2C_Reader.vhd TOP_LEVEL_FILE
-add_fileset_file FE_CPLD_BME280_Compensate_Data.vhd VHDL PATH FE_CPLD_BME280_Compensate_Data.vhd
+add_fileset_file FE_BME280_pkg.vhd VHDL PATH FE_BME280_pkg.vhd
 add_fileset_file i2c_pkg.vhd VHDL PATH ../I2C/i2c_pkg.vhd
 
 

@@ -2,49 +2,83 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
-package FE_CPLD_BME280_Compensate_Data is
 
-  constant BME320_num_calibration : integer := 18;
+
+-- Contains constants to initialize
+package FE_BME280 is
   
-  -- Data byte width definitions
-  constant temp_byte_width          : integer := 3;
-  constant humid_byte_width         : integer := 2;
-  constant pressure_byte_width      : integer := 3;
+  -- BME280 I2C ADDR constants
+  constant BME320_Base_I2C_ADDR : std_logic_vector(5 downto 0) := "111011";
+  constant BME320_I2C_ADDR_SDO_0 : std_logic_vector(6 downto 0) := BME320_Base_I2C_ADDR & '0';
+  constant BME320_I2C_ADDR_SDO_1 : std_logic_vector(6 downto 0) := BME320_Base_I2C_ADDR & '1';
+  
+  -- Address to read sensors values from
+  constant READ_PRESSURE_ADDR      : std_logic_vector(7 downto 0) := x"F7"; 
+  constant READ_TEMP_ADDR      : std_logic_vector(7 downto 0) := x"FA"; 
+  constant READ_HUMID_ADDR      : std_logic_vector(7 downto 0) := x"FD"; 
+  constant READ_SENSOR_ADDR      : std_logic_vector(7 downto 0) := READ_PRESSURE_ADDR; 
+
+  -- Number of compensation values on BME280
+  constant BME280_num_calibration : integer := 18;
+  
+  -- Data byte width definitions for:
+    -- ADC values
+  constant temp_raw_bit_width          : integer := 20;
+  constant humid_raw_bit_width         : integer := 16;
+  constant pressure_raw_bit_width      : integer := 20;
+
+  constant temp_byte_width          : integer := 4;
+  constant humid_byte_width         : integer := 4;
+  constant pressure_byte_width      : integer := 4;
+  
+    -- Compensation values
   constant calibration_byte_width   : integer := 4;
   constant temp_comp_byte_width     : integer := 3;
   constant pressure_comp_byte_width : integer := 9;
   constant humid_comp_byte_width    : integer := 6;
-  
-  -- BME compensation word division definitions, counting up
+  constant bme_register_byte_width : integer := 1;
+
+  -- BME compensation word division definitions
+  constant temp_byte_location       : integer := 5;
+  constant humid_byte_location      : integer := 2;
+  constant pressure_byte_location   : integer := 8;
+    -- continued, but counting up for compensation values
   constant temp_comp_byte_location : integer := 0;
   constant humid_comp_byte_location : integer := 12;
   constant pressure_comp_byte_location : integer := 3;
 
+  -- Index value: 
+  -- 0 is the upper bound of where to grab bits for the least significant bits
+  -- 1 is the lower bound of where to grab bits for the least significant bits
+  -- 2 is the upper bound of where to grab bits for the most significant bits
+  -- 3 is the lower bound of where to grab bits for the most significant bits
+  -- Ex: [7, 0, 15, 8] Compensation value = (15-8) & (7-0)
+  -- Ex: [11, 8, 7, 0] Compensation value = (7-0) & (11-8)
   type bit_offset is array (3 downto 0) of integer;
+  -- Type for holding the data to decode raw registers representing a single compensation values
   type cal_rec is record
-      two_bytes : boolean;
-      offset    : integer;
-      is_signed : boolean;
-      bit_offsets : bit_offset;
+      two_bytes : boolean;  -- True if the compensation value needs 2 registers to decode the value
+      offset    : integer;  -- Index value in the array containing raw registers to start reading from. If two_bytes, reads offset and offset + 1
+      is_signed : boolean;  -- True if the value should be interpreted as signed
+      bit_offsets : bit_offset; -- Bit offsets on where to grab the least significant bits and then most significant bits for the compensation value
   end record cal_rec;
 
-  type cal_recs is array ((BME320_num_calibration - 1) downto 0) of cal_rec;
+  -- Type for holding the data to decode the raw registers representing all of the compensation values
+  type cal_recs is array ((BME280_num_calibration - 1) downto 0) of cal_rec;
 
   -- Used to return both t_fine and temp_actual from TempRawToActual
   type cal_temp_vals is record
-    temp_actual : signed(31 downto 0);
-    t_fine      : signed(31 downto 0);
-    var1        : signed(31 downto 0);
-    var2        : signed(31 downto 0);
+    temp_actual : signed(temp_byte_width * 8 - 1 downto 0);
+    t_fine      : signed(temp_byte_width * 8 - 1 downto 0);
   end record cal_temp_vals;
   
   constant cal_reg_raw_length : integer := 32;
-  constant cal_reg_raw_byte_width : integer := 1;
   constant cal_reg_length : integer := 18;
-  constant cal_reg_byte_width : integer := 4;
   
-  type raw_cal_reg is array (cal_reg_raw_length - 1 downto 0) of std_logic_vector(cal_reg_raw_byte_width * 8 - 1 downto 0);
-  type actual_cal_reg is array(cal_reg_length - 1 downto 0) of signed(cal_reg_byte_width * 8 - 1 downto 0);
+  -- Type for holding the 8 bit register values that need to be pieced together to get the compensation values
+  type raw_cal_reg is array (cal_reg_raw_length - 1 downto 0) of std_logic_vector(bme_register_byte_width * 8 - 1 downto 0);
+  -- Type for holding the compensation values
+  type actual_cal_reg is array(cal_reg_length - 1 downto 0) of signed(calibration_byte_width * 8 - 1 downto 0);
   
   
   -- Convert temperature from raw value to actual value with resolution 0.01 DegC. Output value of "5123" equals 51.23 DegC.
@@ -54,11 +88,13 @@ package FE_CPLD_BME280_Compensate_Data is
   -- dig_t2 : calibration value dig_t2 from BME 280
   -- dig_t3 : calibration value dig_t3 from BME 280
   -- Returns array of signed values, first value containing temp value and second containing t_fine
-  function TempRawToActual(temp_raw_std : std_logic_vector(19 downto 0);
-                                  dig_t1 : signed(calibration_byte_width * 8 - 1 downto 0);
-                                  dig_t2 : signed(calibration_byte_width * 8 - 1 downto 0);
-                                  dig_t3 : signed(calibration_byte_width * 8 - 1 downto 0)) 
-                                  return cal_temp_vals;
+  function TempRawToActual(
+    temp_raw_std : std_logic_vector(temp_raw_bit_width - 1 downto 0);
+    dig_t1       : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_t2       : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_t3       : signed(calibration_byte_width * 8 - 1 downto 0)
+    ) 
+  return cal_temp_vals;
 
   -- Convert pressure from raw value to actual value
   -- Returns pressure in Pa in Q24.8 format (24 integer bits and 8 fractional bits).
@@ -67,54 +103,48 @@ package FE_CPLD_BME280_Compensate_Data is
   -- pressure_raw : raw presure data from BME 280
   -- dig_px : calibration value dig_px from BME 280 where x = 1 to 9
   -- t_fine     : fine temperature calibration value found during temperature compensation
-  function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
-                               dig_p1 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p2 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p3 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p4 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p5 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p6 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p7 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p8 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               dig_p9 : signed(calibration_byte_width * 8 - 1 downto 0);
-                               t_fine     : signed(31 downto 0)
-                               )
-                               return unsigned;
+  function PressureRawToActual(
+    pressure_raw_std : std_logic_vector(pressure_raw_bit_width downto 0);
+    dig_p1           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p2           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p3           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p4           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p5           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p6           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p7           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p8           : signed(calibration_byte_width * 8 - 1 downto 0);
+    dig_p9           : signed(calibration_byte_width * 8 - 1 downto 0);
+    t_fine           : signed(temp_byte_width * 8 - 1 downto 0)
+    )
+  return unsigned;
                                
-  -- Convert pressure from raw value to actual value
-  -- Returns pressure in %RH in Q22.10 format (22 integer bits and 10 fractional bits).
+  -- Convert humidity from raw value to actual value
+  -- Returns humidity in %RH in Q22.10 format (22 integer bits and 10 fractional bits).
   -- Output value of “47445” represents 47445/1024 = 46.333 %RH
   -- Math is entirely based off BME 280 compensation formulas
-  -- humid_raw : raw humidity data from BME 280
-  -- dig_hx : calibration value dig_hx from BME 280 where x = 1 to 6
-  -- t_fine     : fine temperature calibration value found during temperature compensation
-  -- function HumidRawToActual(humid_raw_std : std_logic_vector(humid_byte_width * 8 -1 downto 0);
-  --                           dig_h1 : signed(calibration_byte_width * 8 - 1 downto 0);
-  --                           dig_h2 : signed(calibration_byte_width * 8 - 1 downto 0);
-  --                           dig_h3 : signed(calibration_byte_width * 8 - 1 downto 0);
-  --                           dig_h4 : signed(calibration_byte_width * 8 - 1 downto 0);
-  --                           dig_h5 : signed(calibration_byte_width * 8 - 1 downto 0);
-  --                           dig_h6 : signed(calibration_byte_width * 8 - 1 downto 0);
-  --                           t_fine     : signed(31 downto 0)
-  --                           )
-  --                           return unsigned;
-
+  -- humid_raw_std : raw temperature data from BME 280
+  -- dig_px_std    : calibration value dig_px from BME 280 where x = 1 to 6
+  -- t_fine        : fine temperature calibration value found during temperature compensation
+  -- state         : determines what calculation should be done next
+  -- temp          : temporary value for intermediate values in calculation
+  -- temp2         : 2nd temporary value when needed for intermediate values in calculations
+  -- humid_actual  : humidity in %RH in Q22.10 format
   procedure HumidRawToActual( 
-    variable humid_raw_std  : in std_logic_vector(humid_byte_width * 8 -1 downto 0);
-    signal dig_h1         : in signed(calibration_byte_width * 8 - 1 downto 0);
-    signal dig_h2         : in signed(calibration_byte_width * 8 - 1 downto 0);
-    signal dig_h3         : in signed(calibration_byte_width * 8 - 1 downto 0);
-    signal dig_h4         : in signed(calibration_byte_width * 8 - 1 downto 0);
-    signal dig_h5         : in signed(calibration_byte_width * 8 - 1 downto 0);
-    signal dig_h6         : in signed(calibration_byte_width * 8 - 1 downto 0);
-    signal t_fine         : in signed(31 downto 0);
-    variable state_in     : in integer;
-    variable temp_in      : in signed(31 downto 0);
-    variable temp2_in     : in signed(31 downto 0);
-    variable state_out    : out integer;
-    variable temp_out     : out signed(31 downto 0);
-    variable temp2_out    : out signed(31 downto 0);
-    signal humid_actual   : out unsigned(31 downto 0)
+    variable humid_raw_std  : in std_logic_vector(humid_raw_bit_width -1 downto 0);
+    signal dig_h1           : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h2           : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h3           : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h4           : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h5           : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal dig_h6           : in signed(calibration_byte_width * 8 - 1 downto 0);
+    signal t_fine           : in signed(temp_byte_width * 8 - 1 downto 0);
+    variable state_in       : in integer;
+    variable temp_in        : in signed(31 downto 0);
+    variable temp2_in       : in signed(31 downto 0);
+    variable state_out      : out integer;
+    variable temp_out       : out signed(31 downto 0);
+    variable temp2_out      : out signed(31 downto 0);
+    signal humid_actual     : out unsigned(humid_byte_width * 8 - 1 downto 0)
   );
 
 -- Convert raw calibration register values to actual compensation values
@@ -328,9 +358,9 @@ function decode_comp_registers(cal_decode_vals : cal_recs; cal_raw_regs : raw_ca
         ) 
       )
     );
-end package FE_CPLD_BME280_Compensate_Data;
+end package FE_BME280;
 
-package body FE_CPLD_BME280_Compensate_Data is
+package body FE_BME280 is
 
 -- Convert temperature from raw value to actual value with resolution 0.01 DegC. Output value of "5123" equals 51.23 DegC.
 -- Math is entirely based off BME 280 compensation formulas
@@ -339,14 +369,16 @@ package body FE_CPLD_BME280_Compensate_Data is
 -- dig_t2_std : calibration value dig_t2 from BME 280
 -- dig_t3_std : calibration value dig_t3 from BME 280
 -- Returns array of signed values, first value containing temp value and second containing t_fine
-function TempRawToActual(temp_raw_std : std_logic_vector(19 downto 0);
-                                dig_t1 : signed(calibration_byte_width * 8 - 1 downto 0);
-                                dig_t2 : signed(calibration_byte_width * 8 - 1 downto 0);
-                                dig_t3 : signed(calibration_byte_width * 8 - 1 downto 0)) 
-                                return cal_temp_vals is
+function TempRawToActual(
+  temp_raw_std : std_logic_vector(temp_raw_bit_width - 1 downto 0);
+  dig_t1       : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_t2       : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_t3       : signed(calibration_byte_width * 8 - 1 downto 0)
+  ) 
+return cal_temp_vals is
   variable results     : cal_temp_vals;
   variable temp_raw    : signed(31 downto 0);
-  variable temp_actual : signed(31 downto 0);
+  variable temp_actual : signed(temp_byte_width * 8 - 1 downto 0);
   variable temp_fine   : signed(31 downto 0);
   variable var1        : signed(31 downto 0);
   variable var2        : signed(31 downto 0);
@@ -360,7 +392,7 @@ begin
   temp_fine := var1 + var2;
   temp_actual := resize(shift_right(temp_fine * 5 + 128, 8), temp_actual'length);
 
-  results := (temp_actual => temp_actual, t_fine => temp_fine, var1 => var1, var2 => var2);
+  results := (temp_actual => temp_actual, t_fine => temp_fine);
 
   return results;
 end function;
@@ -372,20 +404,21 @@ end function;
 -- pressure_raw : raw temperature data from BME 280
 -- dig_px_std : calibration value dig_px from BME 280 where x = 1 to 9
 -- t_fine     : fine temperature calibration value found during temperature compensation
-function PressureRawToActual(pressure_raw_std : std_logic_vector(19 downto 0);
-                             dig_p1 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p2 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p3 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p4 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p5 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p6 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p7 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p8 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             dig_p9 : signed(calibration_byte_width * 8 - 1 downto 0);
-                             t_fine     : signed(31 downto 0)
-                             )
-                             return unsigned is
-    variable pressure_actual : unsigned (31 downto 0);
+function PressureRawToActual(
+  pressure_raw_std : std_logic_vector(pressure_raw_bit_width - 1 downto 0);
+  dig_p1           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p2           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p3           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p4           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p5           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p6           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p7           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p8           : signed(calibration_byte_width * 8 - 1 downto 0);
+  dig_p9           : signed(calibration_byte_width * 8 - 1 downto 0);
+  t_fine           : signed(temp_byte_width * 8 - 1 downto 0)
+  )
+return unsigned is
+    variable pressure_actual : unsigned (pressure_byte_width * 8 - 1downto 0);
 	  variable pressure_raw    : signed (31 downto 0);
     variable var1 : signed(31 downto 0);
     variable var2 : signed(31 downto 0);
@@ -403,13 +436,13 @@ begin
   if (var1 /= 0) then
     p := resize(unsigned(1048576 - pressure_raw - shift_right(var2, 12)) * 3125, p'length);
     
+    -- TODO: Refactor to handle timing issue caused by division
     if (p < x"80000000") then
       --p := shift_right(p, 1) / unsigned(var1);
     else
       --p := resize((p / unsigned(var1)) * 2, p'length);
     end if;
-    --p := resize(resize(shift_right((shift_left(p, 31) - var2) * 3125, 32), 32) / resize(shift_right(var1, 32),32), p'length);
-
+    
     var1 := resize(shift_right(dig_p9 * signed(shift_right(shift_right(p, 3) * shift_right(p, 3), 13)), 12), var1'length);
     var2 := resize(shift_right(dig_p8 * signed(shift_right(p, 2)), 13), var2'length);
     p := resize(unsigned(signed(p) + shift_right(var1 + var2 + dig_p7, 4)), p'length);
@@ -424,29 +457,33 @@ begin
 end function;
 
 
--- Convert pressure from raw value to actual value
--- Returns pressure in %RH in Q22.10 format (22 integer bits and 10 fractional bits).
+-- Convert humidity from raw value to actual value
+-- Returns humidity in %RH in Q22.10 format (22 integer bits and 10 fractional bits).
 -- Output value of “47445” represents 47445/1024 = 46.333 %RH
 -- Math is entirely based off BME 280 compensation formulas
--- pressure_raw : raw temperature data from BME 280
--- dig_px_std : calibration value dig_px from BME 280 where x = 1 to 6
--- t_fine     : fine temperature calibration value found during temperature compensation
+-- humid_raw_std : raw temperature data from BME 280
+-- dig_px_std    : calibration value dig_px from BME 280 where x = 1 to 6
+-- t_fine        : fine temperature calibration value found during temperature compensation
+-- state         : determines what calculation should be done next
+-- temp          : temporary value for intermediate values in calculation
+-- temp2         : 2nd temporary value when needed for intermediate values in calculations
+-- humid_actual  : humidity in %RH in Q22.10 format
 procedure HumidRawToActual( 
-    variable humid_raw_std  : in std_logic_vector(humid_byte_width * 8 -1 downto 0);
+    variable humid_raw_std  : in std_logic_vector(humid_raw_bit_width - 1 downto 0);
     signal dig_h1         : in signed(calibration_byte_width * 8 - 1 downto 0);
     signal dig_h2         : in signed(calibration_byte_width * 8 - 1 downto 0);
     signal dig_h3         : in signed(calibration_byte_width * 8 - 1 downto 0);
     signal dig_h4         : in signed(calibration_byte_width * 8 - 1 downto 0);
     signal dig_h5         : in signed(calibration_byte_width * 8 - 1 downto 0);
     signal dig_h6         : in signed(calibration_byte_width * 8 - 1 downto 0);
-    signal t_fine         : in signed(31 downto 0);
+    signal t_fine         : in signed(temp_byte_width * 8 - 1 downto 0);
     variable state_in     : in integer;
     variable temp_in      : in signed(31 downto 0);
     variable temp2_in     : in signed(31 downto 0);
     variable state_out    : out integer;
     variable temp_out     : out signed(31 downto 0);
     variable temp2_out    : out signed(31 downto 0);
-    signal humid_actual   : out unsigned(31 downto 0)
+    signal humid_actual   : out unsigned(humid_byte_width * 8 - 1 downto 0)
   ) is
     variable humid_raw    : signed(31 downto 0);
     variable v_x1_u32r    : signed(31 downto 0);
@@ -515,37 +552,43 @@ function decode_comp_registers(cal_decode_vals : cal_recs; cal_raw_regs : raw_ca
   variable raw_cal       : std_logic_vector( 15 downto 0);
   variable offset_length : integer;
   variable offset_length_2 : integer;
-  variable actual_cal    : signed(cal_reg_byte_width * 8 - 1 downto 0);
+  variable actual_cal    : signed(calibration_byte_width * 8 - 1 downto 0);
   variable is_12bit      : boolean;
 begin
 	 for cal_ind in cal_reg_length - 1 downto 0 loop
 		temp_cal_rec := cal_decode_vals(cal_ind);
 		
-		if(temp_cal_rec.two_bytes) then 
+    if(temp_cal_rec.two_bytes) then 
+      -- Setting the first register read as the LSB. Ex: Setting raw_cal = 0x89 & 0x88
 			raw_cal := cal_raw_regs(temp_cal_rec.offset + 1) & cal_raw_regs( temp_cal_rec.offset);
-			
+      
+      -- Calculate how many bits are being set
       offset_length := temp_cal_rec.bit_offsets(0) - temp_cal_rec.bit_offsets(1);
       offset_length_2 :=  temp_cal_rec.bit_offsets(2) - temp_cal_rec.bit_offsets(3)  + offset_length + 1;
-			-- TODO: verify this is correct
-			cal_sorted := (others => '0');
+			
+      cal_sorted := (others => '0');
+      -- Set least significant (4 or 8) bits of the value
 			cal_sorted(offset_length downto 0) := raw_cal(temp_cal_rec.bit_offsets(0) downto temp_cal_rec.bit_offsets(1));
-			cal_sorted(offset_length_2 downto offset_length + 1) := raw_cal(temp_cal_rec.bit_offsets(2) downto temp_cal_rec.bit_offsets(3));
+      -- Set most significant bits of the value
+      cal_sorted(offset_length_2 downto offset_length + 1) := raw_cal(temp_cal_rec.bit_offsets(2) downto temp_cal_rec.bit_offsets(3));
 			
 			if temp_cal_rec.is_signed then
 				is_12bit := temp_cal_rec.bit_offsets(0) = 11 or temp_cal_rec.bit_offsets(2) = 11;
 				if is_12bit then
-				  actual_cal := resize(signed(cal_sorted(11 downto 0)), cal_reg_byte_width * 8);
+				  actual_cal := resize(signed(cal_sorted(11 downto 0)), calibration_byte_width * 8);
 				else
-				  actual_cal := resize(signed(cal_sorted), cal_reg_byte_width * 8);
+				  actual_cal := resize(signed(cal_sorted), calibration_byte_width * 8);
 				end if;
-			else
-			  actual_cal := signed(resize(unsigned(cal_sorted), cal_reg_byte_width * 8));
+      else
+        -- If unsigned, interpret the initial value as unsigned before converting to signed
+			  actual_cal := signed(resize(unsigned(cal_sorted), calibration_byte_width * 8));
 			end if;
 		else -- cal is a single byte
 		  if temp_cal_rec.is_signed then
-		    actual_cal := resize(signed(cal_raw_regs(temp_cal_rec.offset)), cal_reg_byte_width * 8);
-		  else
-		    actual_cal := signed(resize(unsigned(cal_raw_regs(temp_cal_rec.offset)), cal_reg_byte_width * 8));
+		    actual_cal := resize(signed(cal_raw_regs(temp_cal_rec.offset)), calibration_byte_width * 8);
+      else
+        -- If unsigned, interpret the initial value as unsigned before converting to signed
+		    actual_cal := signed(resize(unsigned(cal_raw_regs(temp_cal_rec.offset)), calibration_byte_width * 8));
 		  end if;
 		end if;
 		actual_cal_regs(cal_ind) := actual_cal;
@@ -554,4 +597,4 @@ begin
 	return actual_cal_regs;
 end function;
 
-end package body FE_CPLD_BME280_Compensate_Data;
+end package body FE_BME280;
