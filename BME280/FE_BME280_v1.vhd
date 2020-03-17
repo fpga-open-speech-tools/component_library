@@ -74,10 +74,10 @@ constant START_ADDR       : std_logic_vector(7 downto 0) := x"F7"; -- memory add
 constant BME320_num_calibration : integer := 33;
 
 
-signal read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
-signal write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => START_ADDR);
+signal read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'), data_rd => (others => '0'), busy => '0');
+signal write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => START_ADDR, data_rd => (others => '0'), busy => '0');
 signal read_comp_i2c : i2c_rec;
-signal initialize_BME280_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => (others => '0'));
+signal initialize_BME280_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => (others => '0'), data_rd => (others => '0'), busy => '0');
 signal i2c_control : i2c_rec;
 
 
@@ -204,7 +204,7 @@ begin
 end process;
 
 i2c_control_proc : process (sys_clk, reset_n)
-  constant i2c_disable : i2c_rec := (ena => '0', addr => (others => '1'), rw => '1', data_wr => (others => '0'));
+  constant i2c_disable : i2c_rec := (ena => '0', addr => (others => '1'), rw => '1', data_wr => (others => '0'), data_rd => (others => '0'), busy => '0');
 begin
   if reset_n = '0' then 
     i2c_control <= i2c_disable;
@@ -440,8 +440,8 @@ read_compensation_data_from_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_da
 	  variable bytes_read      : integer range -1 to 32 := -1;
 	  variable all_bytes_read  : boolean;
 	  variable cur_comp_data_reader_state : compensation_data_reader_state := idle;
-    variable init_write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => INIT_COMP_ADDR);
-    variable sec_write_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => SEC_COMP_ADDR);
+    variable init_write_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => INIT_COMP_ADDR, data_rd => (others => '0'), busy => '0');
+    variable sec_write_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => SEC_COMP_ADDR, data_rd => (others => '0'), busy => '0');
     -- variable init_read_i2c  : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '1', data_wr => (others => '0'));
     variable last_byte_to_read : boolean := false;
     variable skip_A0 : boolean := true;
