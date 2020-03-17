@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
-package FE_CPLD_BME280_Compensate_Data is
+package FE_BME280_Compensate_Data is
 
   constant BME320_num_calibration : integer := 18;
   
@@ -328,9 +328,9 @@ function decode_comp_registers(cal_decode_vals : cal_recs; cal_raw_regs : raw_ca
         ) 
       )
     );
-end package FE_CPLD_BME280_Compensate_Data;
+end package FE_BME280_Compensate_Data;
 
-package body FE_CPLD_BME280_Compensate_Data is
+package body FE_BME280_Compensate_Data is
 
 -- Convert temperature from raw value to actual value with resolution 0.01 DegC. Output value of "5123" equals 51.23 DegC.
 -- Math is entirely based off BME 280 compensation formulas
@@ -554,4 +554,4 @@ begin
 	return actual_cal_regs;
 end function;
 
-end package body FE_CPLD_BME280_Compensate_Data;
+end package body FE_BME280_Compensate_Data;
