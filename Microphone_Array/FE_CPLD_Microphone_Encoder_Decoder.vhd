@@ -40,7 +40,7 @@ entity FE_CPLD_Microphone_Encoder_Decoder is
   generic ( 
     avalon_data_width   : integer := 32;
     mic_data_width      : integer := 24;
-    bme_data_width      : integer := 64;
+    bme_data_width      : integer := 96;
     rgb_data_width      : integer := 16;
     cfg_data_width      : integer := 16;
     ch_width            : integer := 4;
@@ -99,17 +99,17 @@ end component;
 signal header_byte_width        : integer := 4;
 signal packet_cntr_byte_width   : integer := 4;
 signal n_mic_byte_width         : integer := 1;
-signal temp_byte_width          : integer := 3;
-signal humid_byte_width         : integer := 2;
-signal pressure_byte_width      : integer := 3;
+signal temp_byte_width          : integer := 4;
+signal humid_byte_width         : integer := 4;
+signal pressure_byte_width      : integer := 4;
 signal mic_byte_width           : integer := 3;
 signal cfg_byte_width           : integer := 2;
 signal rgb_byte_width           : integer := 2;
 
 -- BME word division definitions
-signal temp_byte_location       : integer := 8;
-signal humid_byte_location      : integer := 5;
-signal pressure_byte_location   : integer := 3;
+signal temp_byte_location       : integer := 12;
+signal humid_byte_location      : integer := 8;
+signal pressure_byte_location   : integer := 4;
 
 -- Packet DATA_HEADER ID
 signal header_width : integer := 32;
