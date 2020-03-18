@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------
---! @file FE_CPLD_BME280_I2C_Reader.vhd
+--! @file FE_BME280_v1.vhd
 --! @brief CPLD BME280 I2C reader component
 --! @details This component reads temperature, humidity, pressure from the BME280 via i2c
 --! @author Dylan Wickham
@@ -37,7 +37,7 @@ library work;
 use work.FE_BME280.all;
 use work.i2c.all;
 
-entity FE_CPLD_BME280_I2C_Reader is 
+entity FE_BME280_v1 is 
 generic ( 
     sdo                   : std_logic := '0';      --0 if SDO is connected to ground, 1 if connected to V_DDIO
                                                    -- sets the LSB of the 7-bit i2c address
@@ -62,11 +62,9 @@ generic (
     i2c_data_rd           : in std_logic_vector(7 downto 0);
     i2c_ack_error         : in std_logic);                   
 
-end entity FE_CPLD_BME280_I2C_Reader;
+end entity FE_BME280_v1;
 
-architecture FE_CPLD_BME280_I2C_Reader_arch of FE_CPLD_BME280_I2C_Reader is
-
-constant DIVIDER  :  integer := input_clk/reads_per_second;
+architecture FE_CPLD_BME280_I2C_Reader_arch of FE_BME280_v1 is
 
 -- BME related constants
 constant BME320_I2C_ADDR : std_logic_vector(6 downto 0) := BME320_BASE_I2C_ADDR & sdo;
@@ -318,6 +316,7 @@ end process;
 timing : process (sys_clk, reset_n)
     variable counter : integer := 0;
     variable waiting_ended : boolean := false;
+    constant DIVIDER  :  integer := input_clk/reads_per_second;
 begin
   if reset_n = '0' then 
 	 wait_complete <= false;

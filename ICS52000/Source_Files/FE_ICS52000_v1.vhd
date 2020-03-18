@@ -61,7 +61,9 @@ entity FE_ICS52000 is
           
     mic_data_in           : in  std_logic_vector(n_mics-1 downto 0) := (others => '0');
     mic_ws_out            : out std_logic_vector(n_mics-1 downto 0) := (others => '0');
-    mic_clk_out           : out std_logic_vector(n_clocks-1 downto 0) := (others => '0')
+    mic_clk_out           : out std_logic_vector(n_clocks-1 downto 0) := (others => '0');
+    
+    mics_rdy              : out std_logic
   );
 end entity FE_ICS52000;
 
@@ -365,6 +367,8 @@ mic_ws_out <= mic_ws_out_r;
 mic_out_data    <= mic_out_data_r;
 mic_out_channel <= mic_channel_r;
 mic_out_valid   <= mic_out_valid_r;
+
+mics_rdy <= startup_valid(0);
 
 end architecture rtl;
 
