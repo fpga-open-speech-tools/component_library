@@ -74,6 +74,7 @@ signal write_addr_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '
 signal read_comp_i2c : i2c_rec;
 signal initialize_BME280_i2c : i2c_rec := (ena => '1', addr => BME320_I2C_ADDR, rw => '0', data_wr => (others => '0'));
 signal i2c_control : i2c_rec;
+signal last_i2c_busy : std_logic := '1';
 
 -- Create states for the output state machine
 type reader_state is (idle, write, read, process_data, waiting, init, read_comp_data);
@@ -170,14 +171,15 @@ end process;
 
 i2c_control_proc : process (sys_clk, reset_n)
   constant i2c_disable   : i2c_rec := (ena => '0', addr => (others => '1'), rw => '1', data_wr => (others => '0'));
-  variable last_i2c_busy : std_logic := '1';
+  
 begin
   if reset_n = '0' then 
     i2c_control <= i2c_disable;
   elsif rising_edge(sys_clk) then
-    last_i2c_busy := i2c_busy;
+    
     i2c_byte_began <= last_i2c_busy = '0' and i2c_busy = '1';
     i2c_byte_finished <= last_i2c_busy = '1' and i2c_busy = '0';
+    last_i2c_busy <= i2c_busy;
     case cur_reader_state is
         when init =>
           i2c_control <= initialize_BME280_i2c; 
