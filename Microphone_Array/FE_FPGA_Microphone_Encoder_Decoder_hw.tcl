@@ -60,12 +60,13 @@ set_parameter_property mic_data_width TYPE INTEGER
 set_parameter_property mic_data_width UNITS None
 set_parameter_property mic_data_width ALLOWED_RANGES -2147483648:2147483647
 set_parameter_property mic_data_width HDL_PARAMETER true
-add_parameter bme_data_width INTEGER 64
-set_parameter_property bme_data_width DEFAULT_VALUE 64
+add_parameter bme_data_width INTEGER 96 ""
+set_parameter_property bme_data_width DEFAULT_VALUE 96
 set_parameter_property bme_data_width DISPLAY_NAME bme_data_width
 set_parameter_property bme_data_width TYPE INTEGER
 set_parameter_property bme_data_width UNITS None
 set_parameter_property bme_data_width ALLOWED_RANGES -2147483648:2147483647
+set_parameter_property bme_data_width DESCRIPTION ""
 set_parameter_property bme_data_width HDL_PARAMETER true
 add_parameter rgb_data_width INTEGER 16
 set_parameter_property rgb_data_width DEFAULT_VALUE 16

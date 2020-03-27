@@ -39,7 +39,7 @@ entity FE_FPGA_Microphone_Encoder_Decoder is
   generic ( 
     avalon_data_width   : integer := 32;
     mic_data_width      : integer := 24;
-    bme_data_width      : integer := 64;
+    bme_data_width      : integer := 96;
     rgb_data_width      : integer := 16;
     cfg_data_width      : integer := 16;
     ch_width            : integer := 4;
@@ -94,65 +94,65 @@ component Generic_Shift_Container
 end component;
 
 -- Data byte width definitions
-signal MAX_SDATA_SIZE           : integer := 64;
-signal header_byte_width        : integer := 4;
-signal packet_cntr_byte_width   : integer := 4;
-signal n_mic_byte_width         : integer := 1;
-signal temp_byte_width          : integer := 3;
-signal humid_byte_width         : integer := 2;
-signal pressure_byte_width      : integer := 3;
-signal mic_byte_width           : integer := 3;
-signal cfg_byte_width           : integer := 8;
-signal rgb_byte_width           : integer := 2;
-signal packet_number_byte_width : integer := 4;
-
--- BME word division definitions
-signal temp_byte_location       : integer := 8;
-signal humid_byte_location      : integer := 5;
-signal pressure_byte_location   : integer := 3;
-
--- Packet DATA_HEADER ID
-signal header_width : integer := 32;
-signal DATA_HEADER  : std_logic_vector(header_width-1 downto 0) := x"43504C44";
-signal CMD_HEADER   : std_logic_vector(header_width-1 downto 0) := x"46504741";
-
--- Shift state signals
-signal shift_data             : std_logic_vector(MAX_SDATA_SIZE-1 downto 0) := (others => '0');
-signal shift_data_in          : std_logic_vector(7 downto 0) := (others => '0');
-signal shift_data_out         : std_logic_vector(7 downto 0) := (others => '0');
-signal byte_counter           : integer range 0 to 8 := 0;
-signal byte_counter_follower  : integer range 0 to 8 := 0;
-signal n_bytes                : integer range 0 to 8 := 0;
-signal bit_counter            : integer range 0 to 7 := 0;
-signal mic_counter            : integer range 0 to 64 := 0;
-signal mic_counter_follower   : integer range 0 to 64 := 0;
-signal shift_out              : std_logic;
-signal shift_en_n             : std_logic := '0';
-signal load_data              : std_logic := '0';
-signal packet_number          : unsigned(31 downto 0) := (others => '0');
-signal sdo_mics               : integer range 0 to 64 := 16;
-constant shift_width          : integer := 8;
-
--- Deserialization signals
-signal parallel_data_r        : std_logic_vector(MAX_SDATA_SIZE-1 downto 0) := (others => '0');
-signal header_found           : std_logic := '0';
-signal read_bits              : integer range 0 to MAX_SDATA_SIZE := 0;
-signal read_word_bits         : integer range 0 to MAX_SDATA_SIZE := 0;
-signal sdo_mics_r             : integer range 0 to 32 := 16;
-signal cfg_data_r             : std_logic_vector(8*cfg_byte_width-1 downto 0) := (others => '0');
-signal cfg_out_valid_r        : std_logic := '0';
-signal rgb_data_r             : std_logic_vector(8*rgb_byte_width-1 downto 0) := (others => '0');
-signal rgb_out_valid_r        : std_logic := '0';
-signal cur_mic                : integer range 0 to n_mics_max := 0;
-
-signal send_valid             : std_logic := '0';
-signal busy                   : std_logic := '0';
-signal read_mics              : std_logic := '0';
-
--- Control signals
-signal start_shifting         : std_logic := '0';
-signal end_shifting           : std_logic := '0';
-signal shift_busy             : std_logic := '0';
+signal MAX_SDATA_SIZE             : integer := 96;
+signal header_byte_width          : integer := 4;
+signal packet_cntr_byte_width     : integer := 4;
+signal n_mic_byte_width           : integer := 1;
+signal temp_byte_width            : integer := 4;
+signal humid_byte_width           : integer := 4;
+signal pressure_byte_width        : integer := 4;
+signal mic_byte_width             : integer := 3;
+signal cfg_byte_width             : integer := 8;
+signal rgb_byte_width             : integer := 2;
+signal packet_number_byte_width   : integer := 4;
+                                  
+-- BME word division definitions  
+signal temp_byte_location         : integer := 12;
+signal humid_byte_location        : integer := 8;
+signal pressure_byte_location     : integer := 4;
+                                  
+-- Packet DATA_HEADER ID          
+signal header_width               : integer := 32;
+signal DATA_HEADER                : std_logic_vector(header_width-1 downto 0) := x"43504C44";
+signal CMD_HEADER                 : std_logic_vector(header_width-1 downto 0) := x"46504741";
+                                  
+-- Shift state signals            
+signal shift_data                 : std_logic_vector(MAX_SDATA_SIZE-1 downto 0) := (others => '0');
+signal shift_data_in              : std_logic_vector(7 downto 0) := (others => '0');
+signal shift_data_out             : std_logic_vector(7 downto 0) := (others => '0');
+signal byte_counter               : integer range 0 to 8 := 0;
+signal byte_counter_follower      : integer range 0 to 8 := 0;
+signal n_bytes                    : integer range 0 to 8 := 0;
+signal bit_counter                : integer range 0 to 7 := 0;
+signal mic_counter                : integer range 0 to 64 := 0;
+signal mic_counter_follower       : integer range 0 to 64 := 0;
+signal shift_out                  : std_logic;
+signal shift_en_n                 : std_logic := '0';
+signal load_data                  : std_logic := '0';
+signal packet_number              : unsigned(31 downto 0) := (others => '0');
+signal sdo_mics                   : integer range 0 to 64 := 16;
+constant shift_width              : integer := 8;
+                                  
+-- Deserialization signals        
+signal parallel_data_r            : std_logic_vector(MAX_SDATA_SIZE-1 downto 0) := (others => '0');
+signal header_found               : std_logic := '0';
+signal read_bits                  : integer range 0 to MAX_SDATA_SIZE := 0;
+signal read_word_bits             : integer range 0 to MAX_SDATA_SIZE := 0;
+signal sdo_mics_r                 : integer range 0 to 32 := 16;
+signal cfg_data_r                 : std_logic_vector(8*cfg_byte_width-1 downto 0) := (others => '0');
+signal cfg_out_valid_r            : std_logic := '0';
+signal rgb_data_r                 : std_logic_vector(8*rgb_byte_width-1 downto 0) := (others => '0');
+signal rgb_out_valid_r            : std_logic := '0';
+signal cur_mic                    : integer range 0 to n_mics_max := 0;
+                                  
+signal send_valid                 : std_logic := '0';
+signal busy                       : std_logic := '0';
+signal read_mics                  : std_logic := '0';
+                                  
+-- Control signals                
+signal start_shifting             : std_logic := '0';
+signal end_shifting               : std_logic := '0';
+signal shift_busy                 : std_logic := '0';
 
 -- Avalon streaming signals
 type mic_array_data is array (n_mics_max-1 downto 0) of std_logic_vector(mic_data_width-1 downto 0);

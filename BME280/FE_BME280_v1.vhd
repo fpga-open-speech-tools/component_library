@@ -47,7 +47,7 @@ generic (
   port (
     sys_clk               : in  std_logic                     := 'X';
     reset_n               : in  std_logic                     := 'X';
-    continuous            : in  std_logic                     := 'X'; -- 1 for continuous feed of data at given rate, 0 for a single read
+    continuous            : in  std_logic                     := 'X'; -- 1 for continuous feed of data at given rate, 0 for a single reader_read
     enable                : in  std_logic                     := 'X'; --starts the process when enabled
     busy_out              : out std_logic := '0';
         
@@ -77,7 +77,7 @@ signal i2c_control : i2c_rec;
 signal last_i2c_busy : std_logic := '1';
 
 -- Create states for the output state machine
-type reader_state is (idle, write, read, process_data, waiting, init, read_comp_data);
+type reader_state is (idle, reader_write, reader_read, process_data, waiting, init, read_comp_data);
 signal last_reader_state : reader_state := waiting;
 signal cur_reader_state : reader_state := idle;
 
@@ -126,7 +126,7 @@ begin
         if enable = '1' and i2c_initialized then
           busy_out <= '1';
           if compensation_data_received then
-            cur_reader_state   <= write;
+            cur_reader_state   <= reader_write;
           else
             cur_reader_state   <= init;
           end if;
@@ -139,13 +139,13 @@ begin
         end if;
       when read_comp_data =>
         if compensation_data_received then
-          cur_reader_state <= write;
+          cur_reader_state <= reader_write;
         end if;
-      when write =>
+      when reader_write =>
         if write_complete then
-          cur_reader_state   <= read;
+          cur_reader_state   <= reader_read;
         end if;
-      when read =>
+      when reader_read =>
         if read_complete then
           cur_reader_state   <= process_data;
         end if;
@@ -161,7 +161,7 @@ begin
         busy_out <= '0';
         if wait_complete and i2c_busy = '0' then
           busy_out <= '1';
-          cur_reader_state <= write;
+          cur_reader_state <= reader_write;
         end if;
       when others => 
     
@@ -185,9 +185,9 @@ begin
           i2c_control <= initialize_BME280_i2c; 
         when read_comp_data =>
           i2c_control <= read_comp_i2c;
-        when write =>
+        when reader_write =>
           i2c_control <= write_addr_i2c;
-        when read =>
+        when reader_read =>
           i2c_control <= read_i2c;
         when others => 
           i2c_control <= i2c_disable;
@@ -200,12 +200,12 @@ i2c_addr <= i2c_control.addr;
 i2c_rw   <= i2c_control.rw;
 i2c_data_wr <= i2c_control.data_wr;
 
-write_memory_address : process (sys_clk, reset_n, cur_reader_state, i2c_byte_began)
+write_memory_address : process (sys_clk, reset_n)
 begin 
   if reset_n = '0' then 
     write_complete <= false;
   elsif rising_edge(sys_clk) then
-    if cur_reader_state = write then
+    if cur_reader_state = reader_write then
       if i2c_byte_began then
         write_complete <= true;
       else
@@ -215,8 +215,8 @@ begin
   end if;
 end process;
 
-read_from_BME320 : process (sys_clk, reset_n, cur_reader_state, last_reader_state)
-  -- when the state just became read
+read_from_BME320 : process (sys_clk, reset_n)
+  -- when the state just became reader_read
   variable start_read : boolean;
   variable bytes_read : integer range -1 to read_data'length := -1;
   variable read_data_index : natural range 0 to 63;
@@ -227,7 +227,7 @@ begin
 	 read_complete <= false;
 	 bytes_read := -1;
   elsif rising_edge(sys_clk) then
-    if cur_reader_state = read then
+    if cur_reader_state = reader_read then
       read_i2c.ena <= '1';
       last_byte_to_read := 8 * bytes_read = (read_data'length - 8);
         if(last_byte_to_read) then
@@ -386,7 +386,7 @@ begin
   end if;
 end process;
 
-read_compensation_data_from_BME280 : process (sys_clk, reset_n, i2c_busy, i2c_data_rd)
+read_compensation_data_from_BME280 : process (sys_clk, reset_n)
     type compensation_data_reader_state is (idle, init_write, init_read, sec_write, sec_read, complete);
     constant INIT_COMP_ADDR : std_logic_vector(7 downto 0) := x"88";
     constant SEC_COMP_ADDR  : std_logic_vector(7 downto 0) := x"E1";
@@ -417,7 +417,7 @@ begin
         when init_read =>
           read_comp_i2c <= read_i2c;
           last_byte_to_read := bytes_read = (INIT_BYTES - 1);
-          -- If the actual last_byte to read, disable i2c so it doesnt keep reading
+          -- If the actual last_byte to reader_read, disable i2c so it doesnt keep reading
           if(last_byte_to_read and not(skip_A0)) then
             read_comp_i2c.ena <= '0';
           end if;
@@ -445,7 +445,7 @@ begin
         when sec_read =>
           read_comp_i2c <= read_i2c;
           last_byte_to_read := bytes_read = (INIT_BYTES + SEC_BYTES - 1);
-          -- If the last_byte to read, disable i2c so it doesnt keep reading
+          -- If the last_byte to reader_read, disable i2c so it doesnt keep reading
           if(last_byte_to_read) then
             read_comp_i2c.ena <= '0';
           end if;
