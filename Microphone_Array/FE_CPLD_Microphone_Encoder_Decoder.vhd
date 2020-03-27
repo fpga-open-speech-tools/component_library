@@ -38,13 +38,13 @@ use IEEE.numeric_std.all;
 
 entity FE_CPLD_Microphone_Encoder_Decoder is
   generic ( 
-    avalon_data_width   : integer := 32;
-    mic_data_width      : integer := 24;
-    bme_data_width      : integer := 96;
-    rgb_data_width      : integer := 16;
-    cfg_data_width      : integer := 16;
-    ch_width            : integer := 4;
-    n_mics              : integer := 16
+    avalon_data_width     : integer := 32;
+    mic_data_width        : integer := 24;
+    bme_data_width        : integer := 96;
+    rgb_data_width        : integer := 16;
+    cfg_data_width        : integer := 16;
+    ch_width              : integer := 4;
+    n_mics                : integer := 16
   );
   
   port (

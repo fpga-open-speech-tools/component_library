@@ -63,6 +63,7 @@ architecture rtl of FE_NCP5623B is
   -- I2C logic signals
   signal i2c_enable : std_logic;
   signal i2c_address : std_logic_vector(6 downto 0) := "0111000";
+  -- signal i2c_address : std_logic_vector(6 downto 0) := "1110110";
   signal i2c_rdwr : std_logic;
   signal i2c_data_write : std_logic_vector(7 downto 0) := (others => '0');
   signal i2c_bsy : std_logic;
@@ -90,6 +91,11 @@ architecture rtl of FE_NCP5623B is
   type i2c_state is ( idle,enable_wait,load_first_byte,load_second_byte,
                       tx_wait,i2c_busy_wait, init_device,
                       load_r, load_g, load_b); 
+                      
+  -- Enable recovery from illegal state
+  attribute syn_encoding        : string;
+  attribute syn_encoding of i2c_state : type is "safe";
+  
   signal cur_i2c_state : i2c_state := init_device;
   signal next_i2c_state : i2c_state := idle;
   
