@@ -154,7 +154,11 @@ signal shift_busy     : std_logic := '0';
 
 -- Avalon streaming signals
 type mic_array_data is array (n_mics-1 downto 0) of std_logic_vector(mic_data_width-1 downto 0);
+
+-- Workaround for a memory initialization error associated with defining an array
+-- Assignments -> Device -> Device and Pin Options -> Configuration -> Configuration Mode: Single uncompressed image with Memory Initialization
 signal mic_input_data_r : mic_array_data := (others => (others => '0'));
+
 signal bme_input_data_r : std_logic_vector(bme_data_width-1 downto 0) := (others => '0');
 signal sdo_mics_r       : integer range 0 to 32 := 16;
 signal cfg_data_r    : std_logic_vector(8*cfg_byte_width-1 downto 0) := (others => '0');
@@ -495,7 +499,7 @@ begin
         
       when read_mics =>
         -- Once the number of microphones have been read, read the mic configuration
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= read_enable;
         else
           cur_sdi_state <= read_mics;
@@ -503,7 +507,7 @@ begin
       
       when read_enable =>
         -- Once the mic configuration has been read, read the rgb configuration
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= read_rgb;
         else
           cur_sdi_state <= read_enable;
@@ -511,7 +515,7 @@ begin
       
       when read_rgb =>
         -- Once the rbg LED configuration has been read, send the valid pulse
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= valid_pulse;
         else
           cur_sdi_state <= read_rgb;

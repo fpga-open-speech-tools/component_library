@@ -418,7 +418,7 @@ begin
         
       when read_packet_number =>
         -- Once the packet number has been read, read the number of microphones
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= read_n_mics;
         else
           cur_sdi_state <= read_packet_number;
@@ -426,7 +426,7 @@ begin
         
       when read_n_mics =>
         -- Once the number of microphones has been read, read the temperature data
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= read_temp;
         else
           cur_sdi_state <= read_n_mics;
@@ -434,7 +434,7 @@ begin
       
       when read_temp =>
         -- Once the temperature data has been read, read the pressure data
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= read_pressure;
         else
           cur_sdi_state <= read_temp;
@@ -442,7 +442,7 @@ begin
       
       when read_pressure =>
         -- Once the pressure data has been read, read the humidity data
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= read_humid;
         else
           cur_sdi_state <= read_pressure;
@@ -450,7 +450,7 @@ begin
       
       when read_humid =>
         -- Once the humidity data has been read, read the microphone data
-        if read_bits = read_word_bits - 2 then 
+        if read_bits = read_word_bits - 1 then 
           cur_sdi_state <= read_mic_data;
         else
           cur_sdi_state <= read_humid;
