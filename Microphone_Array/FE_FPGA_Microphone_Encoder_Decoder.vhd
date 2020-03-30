@@ -121,11 +121,8 @@ signal shift_data                 : std_logic_vector(MAX_SDATA_SIZE-1 downto 0) 
 signal shift_data_in              : std_logic_vector(7 downto 0) := (others => '0');
 signal shift_data_out             : std_logic_vector(7 downto 0) := (others => '0');
 signal byte_counter               : integer range 0 to 8 := 0;
-signal byte_counter_follower      : integer range 0 to 8 := 0;
 signal n_bytes                    : integer range 0 to 8 := 0;
 signal bit_counter                : integer range 0 to 7 := 0;
-signal mic_counter                : integer range 0 to 64 := 0;
-signal mic_counter_follower       : integer range 0 to 64 := 0;
 signal shift_out                  : std_logic;
 signal shift_en_n                 : std_logic := '0';
 signal load_data                  : std_logic := '0';
@@ -353,7 +350,6 @@ begin
       when shift_wait =>
         -- Increment the bit counter and reset the shift component load signal
         bit_counter <= bit_counter + 1;
-        byte_counter_follower <= byte_counter;
         load_data <= '0';
       
       when others => 
