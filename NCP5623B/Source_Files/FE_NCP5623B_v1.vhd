@@ -112,9 +112,9 @@ begin
       PWM3_COLOR <= (others => '0');
     elsif rising_edge(sys_clk) then 
       if rgb_input_valid = '1'  then 
-        PWM1_COLOR <= rgb_input_data(4 downto 0);
-        PWM2_COLOR <= rgb_input_data(9 downto 5);
-        PWM3_COLOR <= rgb_input_data(14 downto 10);
+        PWM1_COLOR <= rgb_input_data(4 downto 0);   -- Blue
+        PWM3_COLOR <= rgb_input_data(9 downto 5);   -- Green
+        PWM2_COLOR <= rgb_input_data(14 downto 10); -- Red
         i2c_write  <= '1';
       else
         -- PWM1_COLOR <= PWM1_COLOR;

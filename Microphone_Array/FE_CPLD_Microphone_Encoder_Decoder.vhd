@@ -161,10 +161,10 @@ signal mic_input_data_r : mic_array_data := (others => (others => '0'));
 
 signal bme_input_data_r : std_logic_vector(bme_data_width-1 downto 0) := (others => '0');
 signal sdo_mics_r       : integer range 0 to 32 := 16;
-signal cfg_data_r    : std_logic_vector(8*cfg_byte_width-1 downto 0) := (others => '0');
-signal cfg_out_valid_r : std_logic := '0';
+signal cfg_data_r       : std_logic_vector(8*cfg_byte_width-1 downto 0) := (others => '1');
+signal cfg_out_valid_r  : std_logic := '0';
 signal rgb_data_r       : std_logic_vector(8*rgb_byte_width-1 downto 0) := (others => '0');
-signal rgb_out_valid_r : std_logic := '0';
+signal rgb_out_valid_r  : std_logic := '0';
 
 
 -- Create states for the output state machine
