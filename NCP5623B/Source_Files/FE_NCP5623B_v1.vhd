@@ -62,8 +62,8 @@ architecture rtl of FE_NCP5623B is
     
   -- I2C logic signals
   signal i2c_enable : std_logic;
-  signal i2c_address : std_logic_vector(6 downto 0) := "0111000";
-  -- signal i2c_address : std_logic_vector(6 downto 0) := "1110110";
+  signal i2c_address : std_logic_vector(6 downto 0) := "0111001";
+  -- signal i2c_address : std_logic_vector(6 downto 0) := "1110110"; -- BME
   signal i2c_rdwr : std_logic;
   signal i2c_data_write : std_logic_vector(7 downto 0) := (others => '0');
   signal i2c_bsy : std_logic;
@@ -74,9 +74,9 @@ architecture rtl of FE_NCP5623B is
   signal ILED_OUTPUT : std_logic_vector(2 downto 0) := "001";
   signal MAX_OUTPUT  : std_logic_vector(4 downto 0) := "11111";
    
-  signal PWM1 : std_logic_vector(2 downto 0) := "010";
-  signal PWM2 : std_logic_vector(2 downto 0) := "011";
-  signal PWM3 : std_logic_vector(2 downto 0) := "100";
+  signal PWM1 : std_logic_vector(2 downto 0) := "010"; -- BLUE
+  signal PWM2 : std_logic_vector(2 downto 0) := "011"; -- RED
+  signal PWM3 : std_logic_vector(2 downto 0) := "100"; -- GREEN
   
   signal PWM1_COLOR : std_logic_vector(4 downto 0) := "00000";
   signal PWM2_COLOR : std_logic_vector(4 downto 0) := "00000";
@@ -87,6 +87,9 @@ architecture rtl of FE_NCP5623B is
   signal second_byte : std_logic_vector(7 downto 0) := (others => '0');
   signal write_two : std_logic := '0';
   signal second_byte_loaded : std_logic := '0';
+  
+  signal init_cntr    : integer := 0;
+  signal init_cycles  : integer := 5000;
     
   type i2c_state is ( idle,enable_wait,load_first_byte,load_second_byte,
                       tx_wait,i2c_busy_wait, init_device,
@@ -114,9 +117,9 @@ begin
         PWM3_COLOR <= rgb_input_data(14 downto 10);
         i2c_write  <= '1';
       else
-        PWM1_COLOR <= PWM1_COLOR;
-        PWM2_COLOR <= PWM2_COLOR;
-        PWM3_COLOR <= PWM3_COLOR;  
+        -- PWM1_COLOR <= PWM1_COLOR;
+        -- PWM2_COLOR <= PWM2_COLOR;
+        -- PWM3_COLOR <= PWM3_COLOR;  
         i2c_write  <= '0';
       end if;
     end if;
@@ -126,12 +129,16 @@ begin
   i2c_transition_process: process(sys_clk,reset_n)
   begin
     if reset_n = '0' then 
-      cur_i2c_state <= idle;
+      cur_i2c_state <= init_device;
     elsif rising_edge(sys_clk) then 
       case cur_i2c_state is
 
         when init_device =>
-          cur_i2c_state <= i2c_busy_wait;
+          if i2c_rdy = '1' and init_cntr = init_cycles then 
+            cur_i2c_state <= load_first_byte;
+          else 
+            cur_i2c_state <= init_device;
+          end if;
 
         when idle => 
           -- Wait for the streaming data to be valid before writing the colors to the driver
@@ -205,13 +212,14 @@ begin
       case cur_i2c_state is
 
         when init_device =>
-        
           -- Initialize the device
-          i2c_rdwr <= '0';
-          i2c_enable <= '1';
-          i2c_data_write <= ILED_OUTPUT & MAX_OUTPUT;
-          second_byte <= ILED_OUTPUT & "11111";
-          write_two <= '0';
+          first_byte <= ILED_OUTPUT & MAX_OUTPUT;
+          i2c_req <= '1';
+          if init_cntr < init_cycles then 
+          init_cntr <= init_cntr + 1;   
+          else 
+            init_cntr <= init_cntr;
+          end if;
 
         when idle => 
           -- Disable the I2C enable signal and cancel the request to use the master
@@ -224,25 +232,21 @@ begin
 
         when load_r =>
           -- Load the data into the I2C signals
-          first_byte <= PWM1 & PWM1_COLOR;
-          second_byte <= PWM1 & "11111";
+          first_byte <= PWM2 & PWM2_COLOR;
           
           -- set the next I2C state
           next_i2c_state <= load_g;
-          write_two <= '0';
 
         when load_g =>
           -- Load the data into the I2C signals
-          first_byte <= PWM2 & PWM2_COLOR;
-          second_byte <= PWM2 & "11111";
+          first_byte <= PWM3 & PWM3_COLOR;
           
           -- set the next I2C state
           next_i2c_state <= load_b;
 
         when load_b =>
           -- Load the data into the I2C signals
-          first_byte <= PWM3 & PWM3_COLOR;
-          second_byte <= PWM3 & "11111";
+          first_byte <= PWM1 & PWM1_COLOR;
           
           -- set the next I2C state
           next_i2c_state <= idle;
