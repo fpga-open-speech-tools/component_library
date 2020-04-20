@@ -32,8 +32,6 @@ entity FE_AD4020_v1 is
 	  sys_reset_n           : in  std_logic;                        --      reset.reset_n
 
     spi_clk               : in  std_logic;  -- REMOVE_COMMENT: currently set to 71.4285 Mhz
-    
-    double_spi_clk_in     : in  std_logic;
 
     -----------------------------------------------------------------------------------------------------------
     -- Abstracted data channels, i.e. interface to the data plane as 20-bit data words.
@@ -41,6 +39,7 @@ entity FE_AD4020_v1 is
     AD4020_data_out        : out  std_logic_vector(31 downto 0);     --      data in
     AD4020_valid_out       : out  std_logic;
     AD4020_error_out       : out  std_logic_vector(1 downto 0);
+    AD4020_channel_out     : out  std_logic_vector(1 downto 0);
     
     -------------------------------------------------------------------------------------------------------------------------------------
     -- AD4020 Physical Layer : Signals to/from AD4020 Serial Data Port (from ADCs/to DACs), i.e. connection to physical pins on AD4020
@@ -63,7 +62,7 @@ architecture rtl of FE_AD4020_v1 is
 	  command_width_bits_g   : natural 	:= 8;
 	  address_width_bits_g   : natural 	:= 8;
 	  data_width_bits_g 	  : natural 	:= 8;
-     output_bits_g            : natural   := 24;
+    output_bits_g            : natural   := 24;
 	  cpol_cpha               : std_logic_vector(1 downto 0) := "10"
 	  );
 		port(
@@ -108,9 +107,6 @@ architecture rtl of FE_AD4020_v1 is
   signal   AD4020_spi_write_data        : std_logic_vector(7 downto 0);   -- data to be written to AD4020 register
   signal   AD4020_spi_write_data_rdy    : std_logic;                      -- assert (clock pulse) to write data
   signal   AD4020_spi_busy          	  : std_logic;                      -- If 1, the spi is busy servicing a command. Wait until 0 to send another command. 
- -- signal   AD4020_spi_done          	  : std_logic;                      
-  --signal   AD4020_spi_read_data         : std_logic_vector(19 downto 0);   -- data read from AD4020 register
-  --signal   AD4020_spi_read_data_ack  	  : std_logic;                      -- data ready to be read
   signal   AD4020_spi_sclk              : std_logic;
   signal   AD4020_spi_sclk_delayed      : std_logic;
   signal   AD4020_conv                  : std_logic;
@@ -150,19 +146,16 @@ architecture rtl of FE_AD4020_v1 is
     spi_read_data_start,
     spi_write_init_busy,
     spi_write_init_start,
-    spi_read_data_finish,
-    spi_stop
+    spi_read_data_finish
   );
   
   signal state : state_type;
-  --signal state_follower : state_type;
-  
   
   signal sclk_en : boolean := true;
   signal spi_clk_en : boolean := false;
   signal read_complete : boolean := false;
   
-  
+  signal one_cycle_delay : boolean := false;
   signal SDI_is_low : boolean := true;
   signal tquiet1_delay_complete : boolean := false;
   signal tquiet2_delay_complete : boolean := false;
@@ -171,8 +164,6 @@ architecture rtl of FE_AD4020_v1 is
   signal mosi_ctrl : boolean := true;
   signal spi_mosi  : std_logic;
   signal read_mosi : std_logic;
-
-  signal test_clk : std_logic;
   
 begin
 
@@ -210,31 +201,6 @@ begin
     sclk 					            => AD4020_spi_sclk,					-- AD5791 SPI signal = sclk: serial clock
     cs_n 					            => open				-- AD5791 SPI signal = ss_n: slave select (active low)
   );
-  
-
-  -- why?
-  -- spi_delay: spi_clk_delay
-  --   port map (
-  --     spi_clk                   => spi_clk,
-  --     double_spi_clk            => double_spi_clk_in,
-  --     sys_reset                 => sys_reset_n,
-  --     sclk_out                  => test_clk
-  --     );
-  
-  -- Triggered a data load for DAC   
-  -- -- State machine that waits for a valid pulse from the FPGA, assumes the 
-  -- -- system clock is faster or equal to the SPI clock
-  -- process(sys_clk,sys_reset_n)
-  -- begin
-  --   if rising_edge(sys_clk) then 
-  --     if ((AD4020_valid_in = '1' and AD4020_spi_busy = '0' and data_ready = '0') 
-  --       or (data_ready = '1' and AD4020_spi_busy = '0')) then 
-  --       data_ready <= '1';
-  --     else 
-  --       data_ready <= '0';
-  --     end if;
-  --   end if;
-  -- end process;
   
   -- State machine that handles the state transitions 
   process (spi_clk, sys_reset_n)
@@ -280,7 +246,7 @@ begin
             sclk_en <= false;
           end if; 
         when spi_read_data_start =>
-          if tquiet1_delay_complete then 
+          if one_cycle_delay then 
             state <= spi_read_data_busy;
           else
             state <= spi_read_data_start;
@@ -297,8 +263,6 @@ begin
           if tquiet2_delay_complete then
             state <= spi_read_data_start;
           end if;
-        when spi_stop =>
-          
         when others =>
           state <= init_ADC;
           
@@ -313,6 +277,7 @@ begin
     --------------------------------------------------------------
   process (spi_clk)
     variable bits_left : integer := 20;
+    
   begin
     if (rising_edge(spi_clk)) then
       case state is     
@@ -331,11 +296,6 @@ begin
           
         when spi_write_init_busy =>
           AD4020_spi_write_data_rdy <= '0';
-
-        when spi_stop =>
-          AD4020_conv               <= '1';
-
-        -- --TODO: Consider moving read logic to a falling edge block
         when spi_read_data_start =>
           -- SDI must be high before the rising edge of CNV
           if SDI_is_low then
@@ -346,29 +306,18 @@ begin
           AD4020_valid <= '0';
 
           if tquiet1_delay_complete then
-            spi_clk_en <= true;
             read_mosi <= '0';
-            bits_left := 20;
+            one_cycle_delay <= true;
+            if one_cycle_delay then
+              spi_clk_en <= true;
+            end if;
           end if;
-        -- when spi_read_data_busy =>
-        --   if not(bits_left > 0) then
-        --     spi_clk_en <= false;
-        --   end if;
-        -- when spi_read_data_finish =>
-        --   AD4020_valid <= '1'; 
-        --   if tquiet2_delay_complete then
-        --     AD4020_conv <= '0';
-        --   end if;
         when spi_read_data_busy =>
-          if bits_left > 0 then
-            AD4020_data(bits_left - 1) <= AD4020_MISO_in;
-            bits_left := bits_left - 1;
-          else 
-            read_complete <= true;
+          one_cycle_delay <= false;
+          if not(bits_left > 0) then
             spi_clk_en <= false;
           end if;
         when spi_read_data_finish =>
-        read_complete <= false;
           AD4020_valid <= '1';
           if tquiet2_delay_complete then
             AD4020_conv <= '0';
@@ -378,43 +327,23 @@ begin
         -- do nothing
       end case;
     end if;
-    -- if (rising_edge(spi_clk)) then
-    --   case state is     
-    --     --TODO: Consider moving read logic to a falling edge block
-    --     -- when spi_read_data_start =>
-    --     --   -- SDI must be high before the rising edge of CNV
-    --     --   if SDI_is_low then
-    --     --     read_mosi <= '1';
-    --     --   else 
-    --     --     AD4020_conv <= '1';
-    --     --   end if;
-    --     --   AD4020_valid <= '0';
-
-    --     --   if tquiet1_delay_complete then
-    --     --     spi_clk_en <= true;
-    --     --     bits_left := 20;
-    --     --     read_mosi <= '0';
-    --     --   end if;
-    --     when spi_read_data_busy =>
-    --       if bits_left > 0 then
-    --         AD4020_data(bits_left - 1) <= AD4020_MISO_in;
-    --         bits_left := bits_left - 1;
-    --       else 
-    --         read_complete <= true;
-    --         --spi_clk_en <= false;
-    --       end if;
-    --     when spi_read_data_finish =>
-    --       read_complete <= false;
-    --       --AD4020_valid <= '1'; 
-    --       bits_left := 20;
-    --       -- if tquiet2_delay_complete then
-    --       --   AD4020_conv <= '0';
-    --       -- end if;
+    if (falling_edge(spi_clk)) then
+      case state is     
+        when spi_read_data_busy =>
+          if bits_left > 0 then
+            AD4020_data(bits_left - 1) <= AD4020_MISO_in;
+            bits_left := bits_left - 1;
+          else 
+            read_complete <= true;
+          end if;
+        when spi_read_data_finish =>
+          read_complete <= false;
+          bits_left := 20;
         
-    --     when others => 
-    --     -- do nothing
-    --   end case;
-    -- end if;
+        when others => 
+        -- do nothing
+      end case;
+    end if;
   end process;
   
 
@@ -467,14 +396,6 @@ begin
 		end case;
     end if;
   end process;
-  ---TODO: Fix clock problems (probably 1 more boolean) for "AD4020spiclk", spi_clk, then 0
-
--- process(spi_clk)
---   begin
---   if(rising_edge(spi_clk) or falling_edge(spi_clk)) then
---     test_clk <= spi_clk;
---   end if;
--- end process;
 
   -- Map the output signals
   AD4020_SCLK_out <=AD4020_spi_sclk when sclk_en else spi_clk when spi_clk_en else '0';
@@ -482,6 +403,7 @@ begin
   AD4020_data_out <= std_logic_vector(resize(signed(AD4020_data), AD4020_data_out'length));
   AD4020_MOSI_out <= spi_mosi when mosi_ctrl else read_mosi;
   AD4020_valid_out <= AD4020_valid;
+  AD4020_channel_out <= "00";
 
 end architecture rtl; -- of FE_AD4020_v1
 
