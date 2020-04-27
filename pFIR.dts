@@ -1,0 +1,1230 @@
+/dts-v1/;
+
+/ {
+	model = "Terasic DE10 NANO";
+	compatible = "altr,socfgpa-cyclone5", "altr,socfpga";
+	#address-cells = <0x1>;
+	#size-cells = <0x1>;
+
+	aliases {
+		ethernet0 = "/sopc@0/ethernet@0xff702000";
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		enable-method = "altr,socfpga-smp";
+
+		hps_arm_a9_0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9-18.1", "arm,cortex-a9";
+			reg = <0x00000000>;
+			next-level-cache = <0x1>;
+		}; //end cpu@0 (hps_arm_a9_0)
+
+		hps_arm_a9_1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9-18.1", "arm,cortex-a9";
+			reg = <0x00000001>;
+			next-level-cache = <0x1>;
+		}; //end cpu@1 (hps_arm_a9_1)
+	}; //end cpus
+
+	memory {
+		device_type = "memory";
+                reg = <0xc0000000 0x00010000 0xffff0000 0x00010000 0x00000000 0x80000000>;
+	}; //end memory
+        
+	clocks {
+                #address-cells = <0x1>;
+                #size-cells = <0x1>;
+
+                clk_AD1939_ABCLK {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0x0>;
+                        clock-frequency = <0xbb8000>;
+                        clock-output-names = "clk_AD1939_ABCLK-clk";
+                };
+
+                clk_AD1939_ALRCLK {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0x0>;
+                        clock-frequency = <0x2ee00>;
+                        clock-output-names = "clk_AD1939_ALRCLK-clk";
+                };
+
+                clk_hps {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0x0>;
+                        clock-frequency = <0x2faf080>;
+                        clock-output-names = "clk_hps-clk";
+                        linux,phandle = <0x2>;
+                        phandle = <0x2>;
+                };
+
+                hps_eosc1 {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0x0>;
+                        clock-frequency = <0x17d7840>;
+                        clock-output-names = "hps_eosc1-clk";
+                        linux,phandle = <0x5>;
+                        phandle = <0x5>;
+                };
+
+                hps_eosc2 {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0x0>;
+                        clock-frequency = <0x17d7840>;
+                        clock-output-names = "hps_eosc2-clk";
+                        linux,phandle = <0x6>;
+                        phandle = <0x6>;
+                };
+
+                hps_f2s_periph_ref_clk {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0x0>;
+                        clock-frequency = <0x0>;
+                        clock-output-names = "hps_f2s_periph_ref_clk-clk";
+                        linux,phandle = <0x7>;
+                        phandle = <0x7>;
+                };
+
+                hps_f2s_sdram_ref_clk {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0x0>;
+                        clock-frequency = <0x0>;
+                        clock-output-names = "hps_f2s_sdram_ref_clk-clk";
+                        linux,phandle = <0x8>;
+                        phandle = <0x8>;
+                };
+        }; //end clocks
+
+
+	sopc0: sopc@0 {
+		device_type = "soc";
+		ranges;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "ALTR,avalon", "simple-bus";
+		bus-frequency = <0>;
+
+		hps_bridges: bridge@c0000000 {
+			compatible = "altr,bridge-18.1", "simple-bus";
+           		reg = <0xc0000000 0x20000000>,
+                              <0xff200000 0x00200000>;
+                        reg-names = "axi_h2f", "axi_h2f_lw";
+                        #address-cells = <2>;
+                        #size-cells = <1>;
+                        ranges = <0x00000000 0x00000000 0xc0000000 0x00010000>,
+                                 <0x00000001 0x00000810 0xff200810 0x00000008>,
+                                 <0x00000001 0x00000800 0xff200800 0x00000008>,
+                                 <0x00000001 0x00000000 0xff200000 0x00000800>,
+                                 <0x00000001 0x00000808 0xff200808 0x00000008>;
+
+			jtag_uart: serial@100000810 {
+                                compatible = "altr,juart-18.1", "altr,juart-1.0";
+                                reg = <0x00000001 0x00000810 0x00000008>;
+                                interrupt-parent = <&hps_arm_gic_0>;
+                                interrupts = <0 40 4>;
+				clocks = <0x2>;
+			}; //end serial@100000810 (jtag_uart)
+			
+			DPRAM: dpram@100000000 {
+                                compatible = "fe,DPRAM-1.0", "dev,fe-dpram";
+                                reg = <0x00000001 0x00000000 0x00000800>;
+                                clocks = <0x2>;
+                        }; //end DPRAM@100000000 (DPRAM)
+
+	                pFIR: pFIR@100000800 {
+                                compatible = "fe,pFIR_Testing-1.0", "dev,fe-pFIR_Testing";
+                                reg = <0x00000001 0x00000800 0x00000008>;
+				clocks = <0x2>;
+                        }; //end pFIR@100000800 (pFIR)
+
+			SystemID: sysid@100000808 {
+				compatible = "altr,sysid-18.1", "altr,sysid-1.0";
+				reg = <0x00000001 0x00000808 0x00000008>;
+				clocks = <0x2>;
+				id = <2899645186>;      /* embeddedsw.dts.params.id type NUMBER */
+                                timestamp = <1585863144>;       /* embeddedsw.dts.params.timestamp type NUMBER */
+			}; //end sysid@100000808 (SystemID)
+		}; //end bridge@c0000000 (hps_bridges)
+
+		hps_arm_gic_0: intc@fffed000 {
+			compatible = "arm,cortex-a9-gic-18.1", "arm,cortex-a9-gic";
+			reg = <0xfffed000 0x00001000>,
+				<0xfffec100 0x00000100>;
+			reg-names = "axi_slave0", "axi_slave1";
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			linux,phandle = <0x3>;
+                        phandle = <0x3>;
+		}; //end intc@fffed000 (hps_arm_gic_0)
+
+		hps_L2: L2-cache@fffef000 {
+			compatible = "arm,pl310-cache-18.1", "arm,pl310-cache";
+			reg = <0xfffef000 0x00001000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 38 4>;
+			cache-level = <2>;	/* embeddedsw.dts.params.cache-level type NUMBER */
+			cache-unified;
+                        arm,tag-latency = <0x1 0x1 0x1>;
+                        arm,data-latency = <0x2 0x1 0x1>;
+                        linux,phandle = <0x1>;
+                        phandle = <0x1>;
+		}; //end L2-cache@fffef000 (hps_L2)
+
+		hps_dma: dma@ffe01000 {
+			compatible = "arm,pl330-18.1", "arm,pl330", "arm,primecell";
+			reg = <0xffe01000 0x00001000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 104 4>;
+			clocks = <0x4>;
+			#dma-cells = <1>;	/* embeddedsw.dts.params.#dma-cells type NUMBER */
+			#dma-channels = <8>;	/* embeddedsw.dts.params.#dma-channels type NUMBER */
+			#dma-requests = <32>;	/* embeddedsw.dts.params.#dma-requests type NUMBER */
+			clock-names = "apb_pclk";	/* embeddedsw.dts.params.clock-names type STRING */
+			copy-align = <3>;	/* embeddedsw.dts.params.copy-align type NUMBER */
+			nr-irqs = <9>;	/* embeddedsw.dts.params.nr-irqs type NUMBER */
+			nr-valid-peri = <9>;	/* embeddedsw.dts.params.nr-valid-peri type NUMBER */
+		}; //end dma@ffe01000 (hps_dma)
+
+		hps_sysmgr: sysmgr@ffd08000 {
+			compatible = "altr,sys-mgr-18.1", "altr,sys-mgr", "syscon";
+			reg = <0xffd08000 0x00000400>;
+			cpu1-start-addr = <4291854532>;	/* embeddedsw.dts.params.cpu1-start-addr type NUMBER */
+			linux,phandle = <0x2a>;
+			phandle = <0x2a>;
+		}; //end sysmgr@ffd08000 (hps_sysmgr)
+
+		hps_clkmgr: clkmgr@ffd04000 {
+			compatible = "altr,clk-mgr-18.1", "altr,clk-mgr";
+			reg = <0xffd04000 0x00001000>;
+			clocks = <0x5 0x6 0x7 0x8>;
+			clock-names = "eosc1", "eosc2", "f2s_periph_ref_clk", "f2s_sdram_ref_clk";
+
+			clock_tree {
+				#size-cells = <0>;
+				#address-cells = <1>;
+	
+			 sdram_pll: sdram_pll {
+                                        compatible = "altr,socfpga-pll-clock";
+                                        reg = <0x000000c0>;
+					clocks = <0x5 0x6 0x8>;
+					clock-names = "hps_eosc1", "hps_eosc2", "hps_f2s_sdram_ref_clk";
+                                        #clock-cells = <0>;
+                                        #address-cells = <1>;
+                                        #size-cells = <0>;
+					linux,phandle = <0x9>;
+                                        phandle = <0x9>;
+
+                                        ddr_dqs_clk: ddr_dqs_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x000000c8>;
+						clocks = <0x9>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x1a>;
+						phandle = <0x1a>;
+                                        }; //end ddr_dqs_clk (ddr_dqs_clk)
+
+                                        ddr_2x_dqs_clk: ddr_2x_dqs_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x000000cc>;
+                                                clocks = <0x9>;
+						#clock-cells = <0>;
+						linux,phandle = <0x1b>;
+						phandle = <0x1b>;
+                                        }; //end ddr_2x_dqs_clk (ddr_2x_dqs_clk)
+
+                                        ddr_dq_clk: ddr_dq_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x000000d0>;
+						clocks = <0x9>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x1c>;
+						phandle = <0x1c>;
+                                        }; //end ddr_dq_clk (ddr_dq_clk)
+
+                                        s2f_usr2_clk: s2f_usr2_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x000000d4>;
+						clocks = <0x9>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x1d>;
+						phandle = <0x1d>;
+                                        }; //end s2f_usr2_clk (s2f_usr2_clk)
+                                }; //end sdram_pll (sdram_pll)
+
+				periph_pll: periph_pll {
+                                        compatible = "altr,socfpga-pll-clock";
+                                        reg = <0x00000080>;
+					clocks = <0x5 0x6 0x7>;
+					clock-names = "hps_eosc1", "hps_eosc2", "hps_f2s_periph_re_clk";
+                                        #clock-cells = <0>;
+                                        #address-cells = <1>;
+                                        #size-cells = <0>;
+					linux,phandle = <0xa>;
+					phandle = <0xa>;
+
+                                        per_nand_mmc_clk: per_nand_mmc_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000094>;
+                                                clocks = <0xa>;
+						#clock-cells = <0>;
+						linux,phandle = <0x17>;
+						phandle = <0x17>;
+                                        }; //end per_nand_mmc_clk (per_nand_mmc_clk)
+
+                                        per_base_clk: per_base_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000098>;
+						clocks = <0xa>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0xf>;
+						phandle = <0xf>;
+                                        }; //end per_base_clk (per_base_clk)
+
+                                        per_qspi_clk: per_qspi_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000090>;
+						clocks = <0xa>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x19>;
+						phandle = <0x19>;
+                                        }; //end per_qspi_clk (per_qspi_clk)
+
+                                        s2f_usr1_clk: s2f_usr1_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x0000009c>;
+						clocks = <0xa>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x15>;
+						phandle = <0x15>;
+                                        }; //end s2f_usr1_clk (s2f_usr1_clk)
+
+                                        emac0_clk: emac0_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000088>;
+						clocks = <0xa>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x13>;
+						phandle = <0x13>;
+                                        }; //end emac0_clk (emac0_clk)
+
+                                        emac1_clk: emac1_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x0000008c>;
+						clocks = <0xa>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x14>;
+						phandle = <0x14>;
+                                        }; //end emac1_clk (emac1_clk)
+                                }; //end periph_pll (periph_pll)
+
+				main_pll: main_pll {
+                                        compatible = "altr,socfpga-pll-clock";
+                                        reg = <0x00000040>;
+					clocks = <0x5>;
+                                        #clock-cells = <0>;
+                                        #address-cells = <1>;
+                                        #size-cells = <0>;
+					linux,phandle = <0xb>;
+					phandle = <0xb>;
+
+                                        cfg_s2f_usr0_clk: cfg_s2f_usr0_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x0000005c>;
+						clocks = <0xb>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x12>;
+						phandle = <0x12>;
+                                        }; //end cfg_s2f_usr0_clk (cfg_s2f_usr0_clk)
+
+                                        main_qspi_clk: main_qspi_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000054>;
+						clocks = <0xb>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x18>;
+						phandle = <0x18>;
+                                        }; //end main_qspi_clk (main_qspi_clk)
+
+                                        dbg_base_clk: dbg_base_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000050>;
+						clocks = <0xb 0x5>;
+						clock-names = "main_pll", "hps_eosc1";
+                                                #clock-cells = <0>;
+                                                div-reg = <0x000000e8 0x00000000 0x00000009>;
+						linux,phandle = <0x10>;
+						phandle = <0x10>;
+                                        }; //end dbg_base_clk (dbg_base_clk)
+
+                                        mpuclk: mpuclk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000048>;
+						clocks = <0xb>;
+                                                #clock-cells = <0>;
+                                                div-reg = <0x000000e0 0x00000000 0x00000009>;
+						linux,phandle = <0xc>;
+						phandle = <0xc>;
+                                        }; //end mpuclk (mpuclk)
+
+                                        mainclk: mainclk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x0000004c>;
+						clocks = <0xb>;
+                                                #clock-cells = <0>;
+                                                div-reg = <0x000000e4 0x00000000 0x00000009>;
+						linux,phandle = <0xd>;
+						phandle = <0xd>;
+                                        }; //end mainclk (mainclk)
+
+                                        main_nand_sdmmc_clk: main_nand_sdmmc_clk {
+                                                compatible = "altr,socfpga-perip-clk";
+                                                reg = <0x00000058>;
+						clocks = <0xb>;
+                                                #clock-cells = <0>;
+						linux,phandle = <0x16>;
+						phandle = <0x16>;
+                                        }; //end main_nand_sdmmc_clk (main_nand_sdmmc_clk)
+                                }; //end main_pll (main_pll)
+				
+				mpu_l2_ram_clk: mpu_l2_ram_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0xc>;
+					#clock-cells = <0>;
+                                        fixed-divider = <2>;
+                                }; //end mpu_l2_ram_clk (mpu_l2_ram_clk)
+
+                                l4_main_clk: l4_main_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0xd>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000000>;
+					linux,phandle = <0x4>;
+                                        phandle = <0x4>;
+                                }; //end l4_main_clk (l4_main_clk)
+
+                                l3_mp_clk: l3_mp_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0xd>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000001>;
+                                        div-reg = <0x00000064 0x00000000 0x00000002>;
+					linux,phandle = <0xe>;
+                                        phandle = <0xe>;
+                                }; //end l3_mp_clk (l3_mp_clk)
+
+                                l3_sp_clk: l3_sp_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0xe>;
+                                        #clock-cells = <0>;
+                                        div-reg = <0x00000064 0x00000002 0x00000002>;
+                                }; //end l3_sp_clk (l3_sp_clk)
+
+                                l4_mp_clk: l4_mp_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0xd 0xf>;
+					clock-names = "mainclk", "per_base_clk";
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000002>;
+                                        div-reg = <0x00000064 0x00000004 0x00000003>;
+					linux,phandle = <0x20>;
+                                        phandle = <0x20>;
+                                }; //end l4_mp_clk (l4_mp_clk)
+
+                                l4_sp_clk: l4_sp_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0xd 0xf>;
+					clock-names = "mainclk", "per_base_clk";
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000003>;
+                                        div-reg = <0x00000064 0x00000007 0x00000003>;
+					linux,phandle = <0x1f>;
+                                        phandle = <0x1f>;
+                                }; //end l4_sp_clk (l4_sp_clk)
+
+                                dbg_at_clk: dbg_at_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x10>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000004>;
+                                        div-reg = <0x00000068 0x00000000 0x00000002>;
+					linux,phandle = <0x11>;
+                                        phandle = <0x11>;
+                                }; //end dbg_at_clk (dbg_at_clk)
+
+                                dbg_clk: dbg_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x11>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000005>;
+                                        div-reg = <0x00000068 0x00000002 0x00000002>;
+                                }; //end dbg_clk (dbg_clk)
+
+                                dbg_trace_clk: dbg_trace_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x10>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000006>;
+                                        div-reg = <0x0000006c 0x00000000 0x00000003>;
+                                }; //end dbg_trace_clk (dbg_trace_clk)
+				
+				dbg_timer_clk: dbg_timer_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x10>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000007>;
+                                }; //end dbg_timer_clk (dbg_timer_clk)
+
+                                cfg_clk: cfg_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x12>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000008>;
+                                }; //end cfg_clk (cfg_clk)
+
+                                h2f_user0_clock: h2f_user0_clock {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x12>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x00000060 0x00000009>;
+                                }; //end h2f_user0_clock (h2f_user0_clock)
+
+                                emac_0_clk: emac_0_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x13>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000000>;
+                                }; //end emac_0_clk (emac_0_clk)
+
+                                emac_1_clk: emac_1_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0x14>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000001>;
+                                }; //end emac_1_clk (emac_1_clk)
+
+                                usb_mp_clk: usb_mp_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0xf>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000002>;
+                                        div-reg = <0x000000a4 0x00000000 0x00000003>;
+					linux,phandle = <0x27>;
+                                        phandle = <0x27>;
+                                }; //end usb_mp_clk (usb_mp_clk)
+
+                                spi_m_clk: spi_m_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0xf>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000003>;
+                                        div-reg = <0x000000a4 0x00000003 0x00000003>;
+					linux,phandle = <0x22>;
+                                        phandle = <0x22>;
+                                }; //end spi_m_clk (spi_m_clk)
+
+                                can0_clk: can0_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0xf>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000004>;
+                                        div-reg = <0x000000a4 0x00000006 0x00000003>;
+					linux,phandle = <0x2b>;
+                                        phandle = <0x2b>;
+                                }; //end can0_clk (can0_clk)
+
+                                can1_clk: can1_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0xf>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000005>;
+                                        div-reg = <0x000000a4 0x00000009 0x00000003>;
+					linux,phandle = <0x2c>;
+                                        phandle = <0x2c>;
+                                }; //end can1_clk (can1_clk)
+
+                                gpio_db_clk: gpio_db_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+                                        clocks = <0xf>;
+					#clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000006>;
+                                        div-reg = <0x000000a8 0x00000000 0x00000018>;
+                                }; //end gpio_db_clk (gpio_db_clk)
+
+				h2f_user1_clock: h2f_user1_clock {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x15>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000007>;
+                                }; //end h2f_user1_clock (h2f_user1_clock)
+
+                                sdmmc_clk: sdmmc_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x7 0x16 0x17>;
+                                        clock-names = "hps_f2s_periph_ref_clk", "main_nand_sdmmc_clk", "per_nand_mmc_clk";
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000008>;
+					clk-phase = <0x0 0x87>;
+                                        linux,phandle = <0x1e>;
+                                        phandle = <0x1e>;
+                                }; //end sdmmc_clk (sdmmc_clk)
+
+                                nand_x_clk: nand_x_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x7 0x16 0x17>;
+                                        clock-names = "hps_f2s_periph_ref_clk", "main_nand_sdmmc_clk", "per_nand_mmc_clk";
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x00000009>;
+                                }; //end nand_x_clk (nand_x_clk)
+
+                                nand_clk: nand_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x7 0x16 0x17>;
+                                        clock-names = "hps_f2s_periph_ref_clk", "main_nand_sdmmc_clk", "per_nand_mmc_clk";
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x0000000a>;
+                                        fixed-divider = <4>;
+					linux,phandle = <0x21>;
+                                        phandle = <0x21>;
+                                }; //end nand_clk (nand_clk)
+
+                                qspi_clk: qspi_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x7 0x18 0x19>;
+                                        clock-names = "hps_f2s_periph_ref_clk", "main_qspi_clk", "per_qspi_clk";
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000a0 0x0000000b>;
+					linux,phandle = <0x23>;
+                                        phandle = <0x23>;
+                                }; //end qspi_clk (qspi_clk)
+
+                                ddr_dqs_clk_gate: ddr_dqs_clk_gate {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x1a>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000d8 0x00000000>;
+                                }; //end ddr_dqs_clk_gate (ddr_dqs_clk_gate)
+
+                                ddr_2x_dqs_clk_gate: ddr_2x_dqs_clk_gate {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x1b>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000d8 0x00000001>;
+                                }; //end ddr_2x_dqs_clk_gate (ddr_2x_dqs_clk_gate)
+
+                                ddr_dq_clk_gate: ddr_dq_clk_gate {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x1c>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000d8 0x00000002>;
+                                }; //end ddr_dq_clk_gate (ddr_dq_clk_gate)
+
+                                h2f_user2_clock: h2f_user2_clock {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0x1d>;
+                                        #clock-cells = <0>;
+                                        clk-gate = <0x000000d8 0x00000003>;
+                                }; //end h2f_user2_clock (h2f_user2_clock)
+
+                                l3_main_clk: l3_main_clk {
+                                        compatible = "altr,socfpga-gate-clk";
+					clocks = <0xd>;
+                                        #clock-cells = <0>;
+                                }; //end l3_main_clk (l3_main_clk)
+
+ 				mpu_periph_clk: mpu_periph_clk {
+                                        compatible = "altr,socfpga-perip-clk";
+                                        clocks = <0xc>;
+					#clock-cells = <0>;
+                                        reg = <0x00000000>;
+                                        fixed-divider = <4>;
+					linux,phandle = <0x2d>;
+                                        phandle = <0x2d>;
+                                }; //end mpu_periph_clk (mpu_periph_clk)
+                        }; //end clock_tree
+			
+			sdmcc_clk_divided: sdmmc_clk_divided {
+                                #clock-cells = <0x0>;
+                                compatible = "altr,socfpga-gate-clk";
+                                clocks = <0x1e>;
+                                clk-gate = <0xa0 0x8>;
+                                fixed-divider = <0x4>;
+                                linux,phandle = <0x24>;
+                                phandle = <0x24>;
+                        };
+                }; //end clkmgr@ffd04000 (hps_clkmgr)
+
+		hps_rstmgr: rstmgr@ffd05000 {
+			compatible = "altr,rst-mgr-18.1", "altr,rst-mgr", "syscon";
+			reg = <0xffd05000 0x00000100>;
+			#reset-cells = <1>;	/* embeddedsw.dts.params.#reset-cells type NUMBER */
+			altr,modrst-offset = <16>;	/* embeddedsw.dts.params.altr,modrst-offset type NUMBER */
+			linux,phandle = <0x29>;
+                        phandle = <0x29>;
+		}; //end rstmgr@ffd05000 (hps_rstmgr)
+
+		hps_fpgamgr: fpgamgr@ff706000 {
+			compatible = "altr,fpga-mgr-18.1", "altr,fpga-mgr", "altr,socfpga-fpga-mgr";
+			reg = <0xff706000 0x00001000>,
+				<0xffb90000 0x00000100>;
+			reg-names = "axi_slave0", "axi_slave1";
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 175 4>;
+			transport = "mmio";	/* embeddedsw.dts.params.transport type STRING */
+		}; //end fpgamgr@ff706000 (hps_fpgamgr)
+
+		hps_uart0: serial@ffc02000 {
+			compatible = "snps,dw-apb-uart-18.1", "snps,dw-apb-uart";
+			reg = <0xffc02000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 162 4>;
+			clocks = <0x1f>;
+			reg-io-width = <4>;	/* embeddedsw.dts.params.reg-io-width type NUMBER */
+			reg-shift = <2>;	/* embeddedsw.dts.params.reg-shift type NUMBER */
+			status = "okay";	/* embeddedsw.dts.params.status type STRING */
+		}; //end serial@ffc02000 (hps_uart0)
+
+		hps_uart1: serial@ffc03000 {
+			compatible = "snps,dw-apb-uart-18.1", "snps,dw-apb-uart";
+			reg = <0xffc03000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 163 4>;
+			clocks = <0x1f>;
+			reg-io-width = <4>;	/* embeddedsw.dts.params.reg-io-width type NUMBER */
+			reg-shift = <2>;	/* embeddedsw.dts.params.reg-shift type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+		}; //end serial@ffc03000 (hps_uart1)
+
+		hps_timer0: timer@ffc08000 {
+			compatible = "snps,dw-apb-timer-sp-18.1", "snps,dw-apb-timer-sp";
+			reg = <0xffc08000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 167 4>;
+			clocks = <0x1f>;
+			clock-names = "timer";	/* embeddedsw.dts.params.clock-names type STRING */
+		}; //end timer@ffc08000 (hps_timer0)
+
+		hps_timer1: timer@ffc09000 {
+			compatible = "snps,dw-apb-timer-sp-18.1", "snps,dw-apb-timer-sp";
+			reg = <0xffc09000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 168 4>;
+			clocks = <0x1f>;
+			clock-names = "timer";	/* embeddedsw.dts.params.clock-names type STRING */
+		}; //end timer@ffc09000 (hps_timer1)
+
+		hps_timer2: timer@ffd00000 {
+			compatible = "snps,dw-apb-timer-osc-18.1", "snps,dw-apb-timer-osc";
+			reg = <0xffd00000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 169 4>;
+			clocks = <0x5>;
+			clock-names = "timer";	/* embeddedsw.dts.params.clock-names type STRING */
+		}; //end timer@ffd00000 (hps_timer2)
+
+		hps_timer3: timer@ffd01000 {
+			compatible = "snps,dw-apb-timer-osc-18.1", "snps,dw-apb-timer-osc";
+			reg = <0xffd01000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 170 4>;
+			clocks = <0x5>;
+			clock-names = "timer";	/* embeddedsw.dts.params.clock-names type STRING */
+		}; //end timer@ffd01000 (hps_timer3)
+
+		hps_wd_timer0: timer@ffd02000 {
+			compatible = "snps,dw-wdt-18.1", "snps,dw-wdt";
+			reg = <0xffd02000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 171 4>;
+			clocks = <0x5>;
+			clock-names = "timer";	/* embeddedsw.dts.params.clock-names type STRING */
+		}; //end timer@ffd02000 (hps_wd_timer0)
+
+		hps_wd_timer1: timer@ffd03000 {
+			compatible = "snps,dw-wdt-18.1", "snps,dw-wdt";
+			reg = <0xffd03000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 172 4>;
+			clocks = <0xf>;
+			clock-names = "timer";	/* embeddedsw.dts.params.clock-names type STRING */
+			status = "disabled";
+		}; //end timer@ffd03000 (hps_wd_timer1)
+
+		hps_gpio0: gpio@ff708000 {
+			compatible = "snps,dw-apb-gpio", "snps,dw-gpio-18.1", "snps,dw-gpio";
+			reg = <0xff708000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 164 4>;
+			clocks = <0x20>;
+			#gpio-cells = <2>;
+			gpio-controller;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			hps_gpio0_porta: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <29>;
+				reg = <0>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <0 164 4>;
+				interrupt-parent = <&hps_arm_gic_0>;
+			}; //end gpio-controller@0 (hps_gpio0_porta)
+		}; //end gpio@ff708000 (hps_gpio0)
+
+		hps_gpio1: gpio@ff709000 {
+			compatible = "snps,dw-apb-gpio", "snps,dw-gpio-18.1", "snps,dw-gpio";
+			reg = <0xff709000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 165 4>;
+			clocks = <0x20>;
+			#gpio-cells = <2>;
+			gpio-controller;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			hps_gpio1_porta: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <29>;
+				reg = <0>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <0 165 4>;
+				interrupt-parent = <&hps_arm_gic_0>;
+				linux,phandle = <0x25>;
+                                phandle = <0x25>;
+			}; //end gpio-controller@0 (hps_gpio1_porta)
+		}; //end gpio@ff709000 (hps_gpio1)
+
+		hps_gpio2: gpio@ff70a000 {
+			compatible = "snps,dw-apb-gpio", "snps,dw-gpio-18.1", "snps,dw-gpio";
+			reg = <0xff70a000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 166 4>;
+			clocks = <0x20>;
+			#gpio-cells = <2>;
+			gpio-controller;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			hps_gpio2_porta: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <27>;
+				reg = <0>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+				interrupts = <0 166 4>;
+				interrupt-parent = <&hps_arm_gic_0>;
+			}; //end gpio-controller@0 (hps_gpio2_porta)
+		}; //end gpio@ff70a000 (hps_gpio2)
+
+		hps_i2c0: i2c@ffc04000 {
+			compatible = "snps,designware-i2c-18.1", "snps,designware-i2c";
+			reg = <0xffc04000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 158 4>;
+			clocks = <0x1f>;
+			emptyfifo_hold_master = <1>;	/* embeddedsw.dts.params.emptyfifo_hold_master type NUMBER */
+			status = "okay";	/* embeddedsw.dts.params.status type STRING */
+  			#address-cells = <0x1>;
+                        #size-cells = <0x0>;
+                        speed-mode = <0x0>;
+                        clock-frequency = <0x186a0>;
+                        i2c-sda-falling-time-ns = <0x1388>;
+                        i2c-scl-falling-time-ns = <0x1388>;
+
+                        adi,axl345@0x53 {
+                                compatible = "adi,axl345";
+                                reg = <0x53>;
+                        };
+		}; //end i2c@ffc04000 (hps_i2c0)
+
+		hps_i2c1: i2c@ffc05000 {
+			compatible = "snps,designware-i2c-18.1", "snps,designware-i2c";
+			reg = <0xffc05000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 159 4>;
+			clocks = <0x1f>;
+			emptyfifo_hold_master = <1>;	/* embeddedsw.dts.params.emptyfifo_hold_master type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+		}; //end i2c@ffc05000 (hps_i2c1)
+
+		hps_i2c2: i2c@ffc06000 {
+			compatible = "snps,designware-i2c-18.1", "snps,designware-i2c";
+			reg = <0xffc06000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 160 4>;
+			clocks = <0x1f>;
+			emptyfifo_hold_master = <1>;	/* embeddedsw.dts.params.emptyfifo_hold_master type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+		}; //end i2c@ffc06000 (hps_i2c2)
+
+		hps_i2c3: i2c@ffc07000 {
+			compatible = "snps,designware-i2c-18.1", "snps,designware-i2c";
+			reg = <0xffc07000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 161 4>;
+			clocks = <0x1f>;
+			emptyfifo_hold_master = <1>;	/* embeddedsw.dts.params.emptyfifo_hold_master type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+		}; //end i2c@ffc07000 (hps_i2c3)
+
+		hps_nand0: flash@ff900000 {
+			compatible = "denali,nand-18.1", "denali,denali-nand-dt";
+			reg = <0xff900000 0x00010000>,
+				<0xffb80000 0x00010000>;
+			reg-names = "nand_data", "denali_reg";	/* embeddedsw.dts.params.reg-names type STRING */
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 144 4>;
+			clocks = <0x21>;
+			#address-cells = <1>;	/* embeddedsw.dts.params.#address-cells type NUMBER */
+			#size-cells = <1>;	/* embeddedsw.dts.params.#size-cells type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+			bank-width = <2>;
+			device-width = <1>;
+		}; //end flash@ff900000 (hps_nand0)
+
+		hps_spim0: spi@fff00000 {
+			compatible = "snps,dw-spi-mmio-18.1", "snps,dw-spi-mmio", "snps,dw-apb-ssi";
+			reg = <0xfff00000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 154 4>;
+			clocks = <0x22>;
+			#address-cells = <1>;	/* embeddedsw.dts.params.#address-cells type NUMBER */
+			#size-cells = <0>;	/* embeddedsw.dts.params.#size-cells type NUMBER */
+			bus-num = <0>;	/* embeddedsw.dts.params.bus-num type NUMBER */
+			num-chipselect = <4>;	/* embeddedsw.dts.params.num-chipselect type NUMBER */
+			status = "okay";	/* embeddedsw.dts.params.status type STRING */
+		}; //end spi@fff00000 (hps_spim0)
+
+		hps_spim1: spi@fff01000 {
+			compatible = "snps,dw-spi-mmio-18.1", "snps,dw-spi-mmio", "snps,dw-apb-ssi";
+			reg = <0xfff01000 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 155 4>;
+			clocks = <0x22>;
+			#address-cells = <1>;	/* embeddedsw.dts.params.#address-cells type NUMBER */
+			#size-cells = <0>;	/* embeddedsw.dts.params.#size-cells type NUMBER */
+			bus-num = <0>;	/* embeddedsw.dts.params.bus-num type NUMBER */
+			num-chipselect = <4>;	/* embeddedsw.dts.params.num-chipselect type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+
+			spidev@0 {
+                                compatible = "rohm,dh2228fv";
+                                reg = <0x0>;
+                                spi-max-frequency = <0x5f5e100>;
+                                enable-dma = <0x1>;
+                        };
+		}; //end spi@fff01000 (hps_spim1)
+
+		hps_qspi: flash@ff705000 {
+			compatible = "cadence,qspi-18.1", "cadence,qspi", "cdns,qspi-nor";
+			reg = <0xff705000 0x00000100 0xffa00000 0x00000100>;
+			reg-names = "axi_slave0", "axi_slave1";
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 151 4>;
+			clocks = <0x23>;
+			bus-num = <2>;	/* embeddedsw.dts.params.bus-num type NUMBER */
+			fifo-depth = <128>;	/* embeddedsw.dts.params.fifo-depth type NUMBER */
+			num-chipselect = <4>;	/* embeddedsw.dts.params.num-chipselect type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+			bank-width = <2>;
+			device-width = <1>;
+		}; //end flash@ff705000 (hps_qspi)
+
+		hps_sdmmc: flash@ff704000 {
+			compatible = "snps,mmc-18.1", "altr,socfpga-dw-mshc";
+			reg = <0xff704000 0x00001000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 139 4>;
+			clocks = <0x20 0x24>;
+			clock-names = "biu", "ciu";
+			fifo-depth = <1024>;	/* embeddedsw.dts.params.fifo-depth type NUMBER */
+			num-slots = <1>;	/* embeddedsw.dts.params.num-slots type NUMBER */
+			status = "okay";	/* embeddedsw.dts.params.status type STRING */
+			#address-cells = <0x1>;
+                        #size-cells = <0x0>;
+                        broken-cd;
+                        cap-mmc-highspeed;
+                        cap-sd-highspeed;
+			bank-width = <2>;
+			device-width = <1>;
+			bus-width = <0x4>;
+                        altr,dw-mshc-ciu-div = <0x3>;
+                        altr,dw-mshc-sdr-timing = <0x0 0x3>;
+                        supports-highspeed;
+                        cd = <0x25 0x12 0x0>;
+                        cd-gpios = <0x25 0x12 0x0>;
+                        vmmc-supply = <0x26>;
+                        vqmmc-supply = <0x26>;
+
+                        slot@0 {
+                                reg = <0x0>;
+                                bus-width = <0x4>;
+                        };
+
+		}; //end flash@ff704000 (hps_sdmmc)
+
+		hps_usb0: usb@ffb00000 {
+			compatible = "snps,dwc-otg-18.1", "snps,dwc-otg", "snps,dwc2";
+			reg = <0xffb00000 0x00040000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 125 4>;
+			clocks = <0x27>;
+			clock-names = "otg";	/* embeddedsw.dts.params.clock-names type STRING */
+			dev-nperio-tx-fifo-size = <4096>;	/* embeddedsw.dts.params.dev-nperio-tx-fifo-size type NUMBER */
+			dev-perio-tx-fifo-size = "<512 512 512 512 512 512 512 512 512 512 512 512 512 512 512>";	/* embeddedsw.dts.params.dev-perio-tx-fifo-size type STRING */
+			dev-rx-fifo-size = <512>;	/* embeddedsw.dts.params.dev-rx-fifo-size type NUMBER */
+			dev-tx-fifo-size = "<512 512 512 512 512 512 512 512 512 512 512 512 512 512 512>";	/* embeddedsw.dts.params.dev-tx-fifo-size type STRING */
+			dma-mask = <268435455>;	/* embeddedsw.dts.params.dma-mask type NUMBER */
+			enable-dynamic-fifo = <1>;	/* embeddedsw.dts.params.enable-dynamic-fifo type NUMBER */
+			host-nperio-tx-fifo-size = <2560>;	/* embeddedsw.dts.params.host-nperio-tx-fifo-size type NUMBER */
+			host-perio-tx-fifo-size = <2560>;	/* embeddedsw.dts.params.host-perio-tx-fifo-size type NUMBER */
+			host-rx-fifo-size = <2560>;	/* embeddedsw.dts.params.host-rx-fifo-size type NUMBER */
+			phy-names = "usb2-phy";	/* embeddedsw.dts.params.phy-names type STRING */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+			ulpi-ddr = <0>;	/* embeddedsw.dts.params.ulpi-ddr type NUMBER */
+			voltage-switch = <0>;	/* embeddedsw.dts.params.voltage-switch type NUMBER */
+		}; //end usb@ffb00000 (hps_usb0)
+
+		hps_usb1: usb@ffb40000 {
+			compatible = "snps,dwc-otg-18.1", "snps,dwc-otg", "snps,dwc2";
+			reg = <0xffb40000 0x00040000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 128 4>;
+			clocks = <0x27>;
+			clock-names = "otg";	/* embeddedsw.dts.params.clock-names type STRING */
+			dev-nperio-tx-fifo-size = <4096>;	/* embeddedsw.dts.params.dev-nperio-tx-fifo-size type NUMBER */
+			dev-perio-tx-fifo-size = "<512 512 512 512 512 512 512 512 512 512 512 512 512 512 512>";	/* embeddedsw.dts.params.dev-perio-tx-fifo-size type STRING */
+			dev-rx-fifo-size = <512>;	/* embeddedsw.dts.params.dev-rx-fifo-size type NUMBER */
+			dev-tx-fifo-size = "<512 512 512 512 512 512 512 512 512 512 512 512 512 512 512>";	/* embeddedsw.dts.params.dev-tx-fifo-size type STRING */
+			dma-mask = <268435455>;	/* embeddedsw.dts.params.dma-mask type NUMBER */
+			enable-dynamic-fifo = <1>;	/* embeddedsw.dts.params.enable-dynamic-fifo type NUMBER */
+			host-nperio-tx-fifo-size = <2560>;	/* embeddedsw.dts.params.host-nperio-tx-fifo-size type NUMBER */
+			host-perio-tx-fifo-size = <2560>;	/* embeddedsw.dts.params.host-perio-tx-fifo-size type NUMBER */
+			host-rx-fifo-size = <2560>;	/* embeddedsw.dts.params.host-rx-fifo-size type NUMBER */
+			phy-names = "usb2-phy";	/* embeddedsw.dts.params.phy-names type STRING */
+			status = "diabled";	/* embeddedsw.dts.params.status type STRING */
+			ulpi-ddr = <0>;	/* embeddedsw.dts.params.ulpi-ddr type NUMBER */
+			voltage-switch = <0>;	/* embeddedsw.dts.params.voltage-switch type NUMBER */
+			phys = <0x28>;
+		}; //end usb@ffb40000 (hps_usb1)
+
+		hps_gmac0: ethernet@ff700000 {
+			compatible = "synopsys,dwmac-18.1", "altr,socfpga-stmmac", "snps,dwmac-3.70a", "snps,dwmac";
+			reg = <0xff700000 0x00002000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 115 4>;
+			clocks = <0x13>;
+			clock-names = "stmmaceth";	/* embeddedsw.dts.params.clock-names type STRING */
+			interrupt-names = "macirq";	/* embeddedsw.dts.params.interrupt-names type STRING */
+			rx-fifo-depth = <4096>;	/* embeddedsw.dts.params.rx-fifo-depth type NUMBER */
+			snps,multicast-filter-bins = <256>;	/* embeddedsw.dts.params.snps,multicast-filter-bins type NUMBER */
+			snps,perfect-filter-entries = <128>;	/* embeddedsw.dts.params.snps,perfect-filter-entries type NUMBER */
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+			tx-fifo-depth = <4096>;	/* embeddedsw.dts.params.tx-fifo-depth type NUMBER */
+			address-bits = <48>;
+			max-frame-size = <1518>;
+			local-mac-address = [00 00 00 00 00 00];
+			reset-names = "stmmaceth";
+                        resets = <0x29 0x20>;
+		}; //end ethernet@ff700000 (hps_gmac0)
+
+		hps_gmac1: ethernet@ff702000 {
+			compatible = "synopsys,dwmac-18.1", "altr,socfpga-stmmac", "snps,dwmac-3.70a", "snps,dwmac";
+			reg = <0xff702000 0x00002000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 120 4>;
+			clocks = <0x14>;
+			clock-names = "stmmaceth";	/* embeddedsw.dts.params.clock-names type STRING */
+			interrupt-names = "macirq";	/* embeddedsw.dts.params.interrupt-names type STRING */
+			rx-fifo-depth = <4096>;	/* embeddedsw.dts.params.rx-fifo-depth type NUMBER */
+			snps,multicast-filter-bins = <256>;	/* embeddedsw.dts.params.snps,multicast-filter-bins type NUMBER */
+			snps,perfect-filter-entries = <128>;	/* embeddedsw.dts.params.snps,perfect-filter-entries type NUMBER */
+			status = "okay";	/* embeddedsw.dts.params.status type STRING */
+			tx-fifo-depth = <4096>;	/* embeddedsw.dts.params.tx-fifo-depth type NUMBER */
+			address-bits = <48>;
+			max-frame-size = <1518>;
+			local-mac-address = [00 00 00 00 00 00];
+			phy-mode = "rgmii";
+                        snps,phy-addr = <0xffffffff>;
+                        phy-addr = <0xffffffff>;
+                        txc-skew-ps = <0xbb8>;
+                        rxc-skew-ps = <0xbb8>;
+                        txen-skew-ps = <0x0>;
+                        rxdv-skew-ps = <0x0>;
+                        rxd0-skew-ps = <0x0>;
+                        rxd1-skew-ps = <0x0>;
+                        rxd2-skew-ps = <0x0>;
+                        rxd3-skew-ps = <0x0>;
+                        txd0-skew-ps = <0x0>;
+                        txd1-skew-ps = <0x0>;
+                        txd2-skew-ps = <0x0>;
+                        txd3-skew-ps = <0x0>;
+                        altr,sysmgr-syscon = <0x2a 0x60 0x2>;
+                        reset-names = "stmmaceth";
+                        resets = <0x29 0x21>;
+		}; //end ethernet@ff702000 (hps_gmac1)
+
+		hps_dcan0: can@ffc00000 {
+			compatible = "bosch,dcan-18.1", "bosch,d_can";
+			reg = <0xffc00000 0x00001000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 131 4 0 132 4>;
+			interrupt-names = "interrupt_sender0", "interrupt_sender1";
+			clocks = <0x2b>;
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+		}; //end can@ffc00000 (hps_dcan0)
+
+		hps_dcan1: can@ffc01000 {
+			compatible = "bosch,dcan-18.1", "bosch,d_can";
+			reg = <0xffc01000 0x00001000>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <0 135 4 0 136 4>;
+			interrupt-names = "interrupt_sender0", "interrupt_sender1";
+			clocks = <0x2c>;
+			status = "disabled";	/* embeddedsw.dts.params.status type STRING */
+		}; //end can@ffc01000 (hps_dcan1)
+
+		hps_l3regs: rl3regs@ff800000 {
+			compatible = "altr,l3regs-18.1", "altr,l3regs", "syscon";
+			reg = <0xff800000 0x00001000>;
+		}; //end rl3regs@ff800000 (hps_l3regs)
+
+		hps_sdrctl: sdr-ctl@ffc25000 {
+			compatible = "altr,sdr-ctl-18.1", "altr,sdr-ctl", "syscon";
+			reg = <0xffc25000 0x00001000>;
+		}; //end sdr-ctl@ffc25000 (hps_sdrctl)
+
+		hps_timer: timer@fffec600 {
+			compatible = "arm,cortex-a9-twd-timer-18.1", "arm,cortex-a9-twd-timer";
+			reg = <0xfffec600 0x00000100>;
+			interrupt-parent = <&hps_arm_gic_0>;
+			interrupts = <1 13 3844>;
+			clocks = <0x2d>;
+		}; //end timer@fffec600 (hps_timer)
+
+		hps_scu: scu@fffec000 {
+			compatible = "arm,corex-a9-scu-18.1", "arm,cortex-a9-scu";
+			reg = <0xfffec000 0x00000100>;
+		}; //end scu@fffec000 (hps_scu)
+
+		vcc3p3-regulator {
+                        compatible = "regulator-fixed";
+                        regulator-name = "3.3V";
+                        regulator-min-microvolt = <0x325aa0>;
+                        regulator-max-microvolt = <0x325aa0>;
+                        linux,phandle = <0x26>;
+                        phandle = <0x26>;
+                };
+
+                leds {
+                        compatible = "gpio-leds";
+
+                        hps0 {
+                                label = "hps_led0";
+                                gpios = <0x25 0x18 0x0>;
+                        };
+
+                        audiomin0 {
+                                label = "audiomini_led0";
+                                gpios = <0x2e 0x0 0x1>;
+                        };
+
+                        audiomin1 {
+                                label = "audiomini_led1";
+                                gpios = <0x2e 0x1 0x1>;
+                        };
+
+                        audiomin2 {
+                                label = "audiomini_led2";
+                                gpios = <0x2e 0x2 0x1>;
+                        };
+
+                        audiomin3 {
+                                label = "audiomini_led3";
+                                gpios = <0x2e 0x3 0x1>;
+                        };
+                };
+
+		pmu0 {
+                        #address-cells = <0x1>;
+                        #size-cells = <0x1>;
+                        compatible = "arm,cortex-a9-pmu";
+                        interrupt-parent = <0x3>;
+                        interrupts = <0x0 0xb0 0x4 0x0 0xb1 0x4>;
+                        ranges;
+
+                        cti0@ff118000 {
+                                compatible = "arm,coresight-cti";
+                                reg = <0xff118000 0x1000>;
+                        };
+
+                        cti0@ff119000 {
+                                compatible = "arm,coresight-cti";
+                                reg = <0xff119000 0x1000>;
+                        };
+                };
+
+                fpgabridge@0 {
+                        compatible = "altr,socfpga-hps2fpga-bridge";
+                        label = "hps2fpga";
+                        reset-names = "hps2fpga";
+                        clocks = <0x4>;
+                        resets = <0x29 0x60>;
+                };
+
+                fpgabridge@1 {
+                        compatible = "altr,socfpga-lwhps2fpga-bridge";
+                        label = "lwhps2fpga";
+                        reset-names = "lwhps2fpga";
+                        clocks = <0x4>;
+                        resets = <0x29 0x61>;
+                };
+
+                fpgabridge@2 {
+                        compatible = "altr,socfpga-fpga2hps-bridge";
+                        label = "fpga2hps";
+                        reset-names = "fpga2hps";
+                        clocks = <0x4>;
+                        resets = <0x29 0x62>;
+                };
+
+                fpgabridge@3 {
+                        compatible = "altr,socfpga-fpga2sdram-bridge";
+                        label = "fpga2sdram";
+                        read-ports-mask = <0xf>;
+                        write-ports-mask = <0xf>;
+                        cmd-ports-mask = <0x1>;
+                };
+
+                usbphy@0 {
+                        #phy-cells = <0x0>;
+                        compatible = "usb-nop-xceiv";
+                        status = "okay";
+                        linux,phandle = <0x28>;
+                        phandle = <0x28>;
+                };
+
+		fe_tpa613a2 {
+                        compatible = "dev,fe-tpa613a2";
+                };
+
+                fe_ad1939 {
+                        compatible = "dev,fe-ad1939";
+                };
+	}; //end sopc@0 (sopc0)
+
+	chosen {
+		bootargs = "debug console=ttyAL0,115200";
+	}; //end chosen
+}; //end 
