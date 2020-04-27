@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0+
-/** @file FE_pFIR_DPRAM.c
+/** @file FE_DPRAM.c
     
     This kernel driver controls a Dual Port RAM block that interfaces with a programmable FIR filter
     
