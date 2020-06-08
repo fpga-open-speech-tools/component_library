@@ -30,7 +30,7 @@ set_module_property EDITABLE true
 set_module_property REPORT_TO_TALKBACK false
 set_module_property ALLOW_GREYBOX_GENERATION false
 set_module_property REPORT_HIERARCHY false
-
+set_module_property GROUP "FPGA Open Speech Tools"
 
 # 
 # file sets
