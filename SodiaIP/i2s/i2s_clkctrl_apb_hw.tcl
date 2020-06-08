@@ -24,6 +24,7 @@ set_module_property VERSION 1.7
 set_module_property INTERNAL false
 set_module_property OPAQUE_ADDRESS_MAP true
 set_module_property AUTHOR ""
+set_module_property GROUP "Interface Protocols/Audio & Video"
 set_module_property DISPLAY_NAME i2s_clkctrl_apb
 set_module_property INSTANTIATE_IN_SYSTEM_MODULE true
 set_module_property EDITABLE true

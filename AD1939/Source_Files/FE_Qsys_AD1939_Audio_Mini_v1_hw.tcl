@@ -30,7 +30,7 @@ set_module_property EDITABLE true
 set_module_property REPORT_TO_TALKBACK false
 set_module_property ALLOW_GREYBOX_GENERATION false
 set_module_property REPORT_HIERARCHY false
-
+set_module_property GROUP "FPGA Open Speech Tools"
 
 # 
 # file sets
@@ -128,7 +128,7 @@ set_interface_property Line_In associatedReset sys_reset
 set_interface_property Line_In dataBitsPerSymbol 32
 set_interface_property Line_In errorDescriptor ""
 set_interface_property Line_In firstSymbolInHighOrderBits true
-set_interface_property Line_In maxChannel 0
+set_interface_property Line_In maxChannel 3
 set_interface_property Line_In readyLatency 0
 set_interface_property Line_In ENABLED true
 set_interface_property Line_In EXPORT_OF ""
@@ -151,7 +151,7 @@ set_interface_property Headphone_Out associatedReset sys_reset
 set_interface_property Headphone_Out dataBitsPerSymbol 32
 set_interface_property Headphone_Out errorDescriptor ""
 set_interface_property Headphone_Out firstSymbolInHighOrderBits true
-set_interface_property Headphone_Out maxChannel 0
+set_interface_property Headphone_Out maxChannel 3
 set_interface_property Headphone_Out readyLatency 0
 set_interface_property Headphone_Out ENABLED true
 set_interface_property Headphone_Out EXPORT_OF ""
