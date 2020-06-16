@@ -96,7 +96,7 @@ add_interface_port reset reset_n reset_n Input 1
 add_interface avalon_streaming_source avalon_streaming start
 set_interface_property avalon_streaming_source associatedClock sys_clk
 set_interface_property avalon_streaming_source associatedReset reset
-set_interface_property avalon_streaming_source dataBitsPerSymbol 96
+set_interface_property avalon_streaming_source dataBitsPerSymbol 32
 set_interface_property avalon_streaming_source errorDescriptor ""
 set_interface_property avalon_streaming_source firstSymbolInHighOrderBits true
 set_interface_property avalon_streaming_source maxChannel 0
@@ -108,7 +108,7 @@ set_interface_property avalon_streaming_source CMSIS_SVD_VARIABLES ""
 set_interface_property avalon_streaming_source SVD_ADDRESS_GROUP ""
 
 add_interface_port avalon_streaming_source data_output_channel channel Output channel_width
-add_interface_port avalon_streaming_source data_output_data data Output 96
+add_interface_port avalon_streaming_source data_output_data data Output 32
 add_interface_port avalon_streaming_source data_output_error error Output 2
 add_interface_port avalon_streaming_source data_output_valid valid Output 1
 
