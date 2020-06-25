@@ -26,7 +26,7 @@
 --  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --
 -- Tyler Davis
--- Flat Earth Inc
+-- Audio Logic
 -- 985 Technology Blvd
 -- Bozeman, MT 59718
 -- support@flatearthinc.com

@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------
 --
--- Company:          Flat Earth, Inc.
+-- Company:          Audio Logic
 -- Author/Engineer:  Ross K. Snider, Tyler B. Davis
 --
 -- Create Date:      06/29/2018
@@ -62,7 +62,7 @@ entity AD1939_hps_audio_research is
       -----------------------------------------------------------------------------------------------------------
       -- Abstracted data channels, i.e. interface to the data plane as 24-bit data words.
       -- This is setup as a two channel Avalon Streaming Interface 
-      -- See table 17, page 41, of Intel's Avalon® Streaming Interface Specifications
+      -- See table 17, page 41, of Intel's Avalonï¿½ Streaming Interface Specifications
       -- https://www.altera.com/content/dam/altera-www/global/en_US/pdfs/literature/manual/mnl_avalon_spec.pdf
       -- Data is being clocked out at the sys_clk rate and valid is asserted only when data is present.  Left and right channels are specified as channel number (0 or 1)
       -- Data is converted to a W=32 (word length in bits), F=28 (number of fractional bits) before being sent out.

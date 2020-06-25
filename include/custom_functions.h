@@ -19,7 +19,7 @@
     ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     DeveloperName
-    Flat Earth Inc
+    Audio Logic
     985 Technology Blvd
     Bozeman, MT 59718
     support@flatearthinc.com

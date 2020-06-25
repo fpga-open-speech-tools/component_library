@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- Company:          Flat Earth Inc
+-- Company:          Audio Logic
 -- Author/Engineer:	 Tyler Davis (based on a design by Ross Snider)
 -- 
 -- Create Date:    11/07/2018 

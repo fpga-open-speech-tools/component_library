@@ -1,6 +1,6 @@
 --!@file
 ----------------------------------------------------------------------------------
--- Company:          Flat Earth Inc
+-- Company:          Audio Logic
 -- Author/Engineer:  Tyler Davis
 -- 
 -- Create Date:    11/1/2018

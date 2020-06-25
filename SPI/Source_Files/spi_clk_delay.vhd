@@ -1,6 +1,6 @@
 --!@file
 ----------------------------------------------------------------------------
--- Company:          Flat Earth Inc
+-- Company:          Audio Logic
 -- Author/Engineer:  Tyler Davis
 -- 
 -- Create Date:    5/20/2019
@@ -10,7 +10,7 @@
 -- Target Devices: DE10-Nano-SoC
 -- Tool versions: 
 -- Description: 
--- Copyright:   2019 Flat Earth, Inc
+-- Copyright:   2019 Audio Logic
 --
 -- Dependencies: 
 --
