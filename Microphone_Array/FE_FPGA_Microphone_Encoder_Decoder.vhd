@@ -5,7 +5,7 @@
 --            component and transmits commands over serial lines.
 --! @author Tyler Davis
 --! @date 2020
---! @copyright Copyright 2020 Flat Earth Inc
+--! @copyright Copyright 2020 Audio Logic
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal

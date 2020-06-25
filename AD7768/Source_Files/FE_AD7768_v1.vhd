@@ -4,7 +4,7 @@
 --! @details This 
 --! @author Tyler Davis
 --! @date 2020
---! @copyright Copyright 2020 Flat Earth Inc
+--! @copyright Copyright 2020 Audio Logic
 --
 -- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
 -- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 

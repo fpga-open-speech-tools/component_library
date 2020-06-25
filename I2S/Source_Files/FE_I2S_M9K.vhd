@@ -6,7 +6,7 @@
 --!           the output is a word up to 32 bits where each bit contains the left/right data.
 --! @author Tyler Davis
 --! @date 2019
---! @copyright Copyright 2019 Flat Earth Inc
+--! @copyright Copyright 2019 Audio Logic
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal

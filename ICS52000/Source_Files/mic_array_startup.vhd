@@ -6,7 +6,7 @@
 --!             in the ICS-52000 datasheet
 --! @author     Trevor Vannoy, Tyler Davis
 --! @date       March 2020
---! @copyright  Copyright 2020 Flat Earth Inc
+--! @copyright  Copyright 2020 Audio Logic
 --!
 --! Software Released Under the MIT License
 --

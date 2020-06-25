@@ -10,7 +10,7 @@
 
     @author Aaron Koenigsberg based off Ray's code
     @date 2019
-    @copyright 2019 Flat Earth Inc
+    @copyright 2019 Audio Logic
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
     INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
