@@ -30,7 +30,7 @@ char cmd[NDAC * NCMD];
 
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tyler Davis <support@flatearthinc.com>");
+MODULE_AUTHOR("Tyler Davis <openspeech@flatearthinc.com>");
 MODULE_DESCRIPTION("Loadable kernel module for the PGA2505");
 MODULE_VERSION("1.0");
 
