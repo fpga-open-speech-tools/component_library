@@ -6,7 +6,7 @@
 --!             in the ICS-52000 datasheet
 --! @author     Trevor Vannoy, Tyler Davis
 --! @date       March 2020
---! @copyright  Copyright 2020 Flat Earth Inc
+--! @copyright  Copyright 2020 Audio Logic
 --!
 --! Software Released Under the MIT License
 --
@@ -28,10 +28,10 @@
 --  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --
 --  Tyler Davis
---  Flat Earth Inc
+--  Audio Logic
 --  985 Technology Blvd
 --  Bozeman, MT 59718
---  support@flatearthinc.com
+--  openspeech@flatearthinc.com
 --  
 ------------------------------------------------------------------------------------------
 

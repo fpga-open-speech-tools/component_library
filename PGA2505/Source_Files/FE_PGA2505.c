@@ -30,7 +30,7 @@ char cmd[NDAC * NCMD];
 
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tyler Davis <support@flatearthinc.com>");
+MODULE_AUTHOR("Tyler Davis <openspeech@flatearthinc.com>");
 MODULE_DESCRIPTION("Loadable kernel module for the PGA2505");
 MODULE_VERSION("1.0");
 
@@ -112,7 +112,7 @@ static struct platform_driver PGA2505_platform =
       .probe = PGA2505_probe,
       .remove = PGA2505_remove,
       .driver = {
-      .name = "Flat Earth PGA2505 Driver",
+      .name = "Audio Logic PGA2505 Driver",
       .owner = THIS_MODULE,
       .of_match_table = fe_PGA2505_dt_ids
     }
@@ -146,7 +146,7 @@ static int PGA2505_init(void)
     // Initialize the command array, disable all servos, zero crossing, and over range detection
     char single_cmd[2] = {0x80,0x00};
 
-    pr_info("Initializing the Flat Earth PGA2505 module\n");
+    pr_info("Initializing the Audio Logic PGA2505 module\n");
 
     // Register our driver with the "Platform Driver" bus
     ret_val = platform_driver_register(&PGA2505_platform);
@@ -210,7 +210,7 @@ static int PGA2505_init(void)
     --------------------------------------------------------------------
     ------------------------------------------------------------------*/
 
-    pr_info("Flat Earth PGA2505 module successfully initialized!\n");
+    pr_info("Audio Logic PGA2505 module successfully initialized!\n");
 
     return 0;
 }
@@ -433,7 +433,7 @@ static int PGA2505_remove(struct platform_device *pdev)
 // Called when the driver is removed
 static void PGA2505_exit(void)
 {
-    pr_info("Flat Earth PGA2505 module exit\n");
+    pr_info("Audio Logic PGA2505 module exit\n");
 
     // Unregister our driver from the "Platform Driver" bus
     // This will cause "PGA2505_remove" to be called for each connected device
@@ -443,7 +443,7 @@ static void PGA2505_exit(void)
         spi_unregister_device( spi_device );
     }
 
-    pr_info("Flat Earth PGA2505 module successfully unregistered\n");
+    pr_info("Audio Logic PGA2505 module successfully unregistered\n");
 }
 
 /** Function to display the overlay name for the device in sysfs

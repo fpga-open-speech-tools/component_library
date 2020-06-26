@@ -25,7 +25,7 @@
 
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tyler Davis <support@flatearthinc.com>");
+MODULE_AUTHOR("Tyler Davis <openspeech@flatearthinc.com>");
 MODULE_DESCRIPTION("Loadable kernel module for the TPA613A2");
 MODULE_VERSION("1.0");
 
@@ -221,7 +221,7 @@ static struct platform_driver TPA613A2_platform =
       .probe = TPA613A2_probe,
       .remove = TPA613A2_remove,
       .driver = {
-      .name = "Flat Earth TPA613A2 Driver",
+      .name = "Audio Logic TPA613A2 Driver",
       .owner = THIS_MODULE,
       .of_match_table = fe_TPA613A2_dt_ids
     }
@@ -251,7 +251,7 @@ static int TPA613A2_init(void)
     struct i2c_adapter *i2c_adapt;
     struct i2c_board_info i2c_info;
     
-    pr_info("Initializing the Flat Earth TPA613A2 module\n");
+    pr_info("Initializing the Audio Logic TPA613A2 module\n");
 
     // Register our driver with the "Platform Driver" bus
     ret_val = platform_driver_register(&TPA613A2_platform);
@@ -303,7 +303,7 @@ static int TPA613A2_init(void)
     --------------------------------------------------------------------
     ------------------------------------------------------------------*/
     
-    pr_info("Flat Earth TPA6130A2 module successfully initialized!\n");
+    pr_info("Audio Logic TPA6130A2 module successfully initialized!\n");
 
     return 0;
 }
@@ -526,13 +526,13 @@ static int TPA613A2_remove(struct platform_device *pdev)
 // Called when the driver is removed
 static void TPA613A2_exit(void)
 {
-    pr_info("Flat Earth TPA613A2 module exit\n");
+    pr_info("Audio Logic TPA613A2 module exit\n");
 
     // Unregister our driver from the "Platform Driver" bus
     // This will cause "TPA613A2_remove" to be called for each connected device
     platform_driver_unregister(&TPA613A2_platform);
  
-    pr_info("Flat Earth TPA6130A2 module successfully unregistered\n");
+    pr_info("Audio Logic TPA6130A2 module successfully unregistered\n");
 }
 
 /** Function to display the overlay name for the device in sysfs

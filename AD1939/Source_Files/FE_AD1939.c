@@ -25,7 +25,7 @@
 
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tyler Davis <support@flatearthinc.com>");
+MODULE_AUTHOR("Tyler Davis <openspeech@flatearthinc.com>");
 MODULE_DESCRIPTION("Loadable kernel module for the AD1939");
 MODULE_VERSION("1.0");
 
@@ -135,7 +135,7 @@ static struct platform_driver AD1939_platform =
     .probe = AD1939_probe,
     .remove = AD1939_remove,
     .driver = {
-        .name = "Flat Earth AD1939 Driver",
+        .name = "Audio Logic AD1939 Driver",
         .owner = THIS_MODULE,
         .of_match_table = fe_AD1939_dt_ids
     }
@@ -164,7 +164,7 @@ static int AD1939_init(void)
     // Add the spi master 
     struct spi_master *master;
     
-    pr_info("Initializing the Flat Earth AD1939 module\n");
+    pr_info("Initializing the Audio Logic AD1939 module\n");
 
     // Register our driver with the "Platform Driver" bus
     ret_val = platform_driver_register(&AD1939_platform);
@@ -252,7 +252,7 @@ static int AD1939_init(void)
     --------------------------------------------------------------------
     ------------------------------------------------------------------*/
     
-    pr_info("Flat Earth AD1939 module successfully initialized!\n");
+    pr_info("Audio Logic AD1939 module successfully initialized!\n");
 
     return 0;
 }
@@ -570,7 +570,7 @@ static int AD1939_remove(struct platform_device *pdev)
 // Called when the driver is removed
 static void AD1939_exit(void)
 {
-    pr_info("Flat Earth AD1939 module exit\n");
+    pr_info("Audio Logic AD1939 module exit\n");
 
     // Unregister our driver from the "Platform Driver" bus
     // This will cause "AD1939_remove" to be called for each connected device
@@ -580,7 +580,7 @@ static void AD1939_exit(void)
         spi_unregister_device( spi_device );
     }
 
-    pr_info("Flat Earth AD1939 module successfully unregistered\n");
+    pr_info("Audio Logic AD1939 module successfully unregistered\n");
 }
 
 /** Function to display the overlay name for the device in sysfs

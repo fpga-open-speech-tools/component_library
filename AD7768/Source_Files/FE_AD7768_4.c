@@ -25,7 +25,7 @@
 
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tyler Davis <support@flatearthinc.com>");
+MODULE_AUTHOR("Tyler Davis <openspeech@flatearthinc.com>");
 MODULE_DESCRIPTION("Loadable kernel module for the AD7768-4");
 MODULE_VERSION("1.0");
 
@@ -121,7 +121,7 @@ static struct platform_driver AD7768_4_platform =
     .probe = AD7768_4_probe,
     .remove = AD7768_4_remove,
     .driver = {
-        .name = "Flat Earth AD7768_4 Driver",
+        .name = "Audio Logic AD7768_4 Driver",
         .owner = THIS_MODULE,
         .of_match_table = fe_AD7768_4_dt_ids
     }
@@ -151,7 +151,7 @@ static int AD7768_4_init(void)
     // Add the spi master 
     struct spi_master *master;
     
-    pr_info("Initializing the Flat Earth AD7768_4 module\n");
+    pr_info("Initializing the Audio Logic AD7768_4 module\n");
 
     // Register our driver with the "Platform Driver" bus
     ret_val = platform_driver_register(&AD7768_4_platform);
@@ -270,7 +270,7 @@ static int AD7768_4_init(void)
     --------------------------------------------------------------------
     ------------------------------------------------------------------*/
     
-    pr_info("Flat Earth AD7768-4 module successfully initialized!\n");
+    pr_info("Audio Logic AD7768-4 module successfully initialized!\n");
 
     return 0;
 }
@@ -521,7 +521,7 @@ static int AD7768_4_remove(struct platform_device *pdev)
 // Called when the driver is removed
 static void AD7768_4_exit(void)
 {
-    pr_info("Flat Earth AD7768_4 module exit\n");
+    pr_info("Audio Logic AD7768_4 module exit\n");
 
     // Unregister our driver from the "Platform Driver" bus
     // This will cause "AD7768_4_remove" to be called for each connected device
@@ -531,7 +531,7 @@ static void AD7768_4_exit(void)
         spi_unregister_device( spi_device );
     }
 
-    pr_info("Flat Earth AD7768_4 module successfully unregistered\n");
+    pr_info("Audio Logic AD7768_4 module successfully unregistered\n");
 }
 
 /** Function to display the overlay name for the device in sysfs

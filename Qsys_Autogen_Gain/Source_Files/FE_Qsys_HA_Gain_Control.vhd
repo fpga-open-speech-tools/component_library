@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- Company:          Flat Earth Inc
+-- Company:          Audio Logic
 -- Author/Engineer:	 Chris Casebeer
 -- 
 -- Create Date:    6/12/2017 

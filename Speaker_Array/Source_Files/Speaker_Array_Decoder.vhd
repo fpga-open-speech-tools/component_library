@@ -4,7 +4,7 @@
 --! @details  
 --! @author Tyler Davis
 --! @date 2019
---! @copyright Copyright 2019 Flat Earth inc
+--! @copyright Copyright 2019 Audio Logic
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -24,10 +24,10 @@
 --  SOFTWARE OR THE USE OR OTHER DEALinGS in THE SOFTWARE.
 --
 -- Tyler Davis
--- Flat Earth inc
+-- Audio Logic
 -- 985 Technology Blvd
 -- Bozeman, MT 59718
--- support@flatearthinc.com
+-- openspeech@flatearthinc.com
 ----------------------------------------------------------------------------
 
 library IEEE;

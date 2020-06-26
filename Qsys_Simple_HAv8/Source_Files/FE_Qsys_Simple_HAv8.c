@@ -24,7 +24,7 @@
 
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tyler Davis <support@flatearthinc.com>");
+MODULE_AUTHOR("Tyler Davis <openspeech@flatearthinc.com>");
 MODULE_DESCRIPTION("Loadable kernel module for the FE QSys HA block");
 MODULE_VERSION("1.0");
 
@@ -148,7 +148,7 @@ static struct platform_driver HA_platform =
     .probe = HA_probe,
     .remove = HA_remove,
     .driver = {
-        .name = "Flat Earth HA Driver",
+        .name = "Audio Logic HA Driver",
         .owner = THIS_MODULE,
         .of_match_table = fe_HA_dt_ids
     }
@@ -175,7 +175,7 @@ static const struct file_operations fe_HA_fops =
 static int HA_init(void)
 {
     int ret_val = 0;
-    pr_info("Initializing the Flat Earth HA module\n");
+    pr_info("Initializing the Audio Logic HA module\n");
 
     // Register our driver with the "Platform Driver" bus
     ret_val = platform_driver_register(&HA_platform);
@@ -185,7 +185,7 @@ static int HA_init(void)
         return ret_val;
     }
 
-    pr_info("Flat Earth HA module successfully initialized!\n");
+    pr_info("Audio Logic HA module successfully initialized!\n");
 
     return 0;
 }
@@ -536,13 +536,13 @@ static int HA_remove(struct platform_device *pdev)
 // Called when the driver is removed
 static void HA_exit(void)
 {
-    pr_info("Flat Earth HA module exit\n");
+    pr_info("Audio Logic HA module exit\n");
 
     // Unregister our driver from the "Platform Driver" bus
     // This will cause "HA_remove" to be called for each connected device
     platform_driver_unregister(&HA_platform);
 
-    pr_info("Flat Earth HA module successfully unregistered\n");
+    pr_info("Audio Logic HA module successfully unregistered\n");
 }
 
 /** Function to display the overlay name for the device in sysfs

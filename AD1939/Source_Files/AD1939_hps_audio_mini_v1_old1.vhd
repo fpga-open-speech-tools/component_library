@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------
 --
--- Company:          Flat Earth, Inc.
+-- Company:          Audio Logic
 -- Author/Engineer:  Ross K. Snider
 --
 -- Create Date:      06/29/2018

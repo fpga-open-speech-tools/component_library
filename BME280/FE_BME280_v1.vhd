@@ -4,7 +4,7 @@
 --! @details This component reads temperature, humidity, pressure from the BME280 via i2c
 --! @author Dylan Wickham
 --! @date 2020
---! @copyright Copyright 2020 Flat Earth Inc
+--! @copyright Copyright 2020 Audio Logic
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -24,10 +24,10 @@
 --  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --
 -- Dylan Wickham
--- Flat Earth Inc
+-- Audio Logic
 -- 985 Technology Blvd
 -- Bozeman, MT 59718
--- support@flatearthinc.com
+-- openspeech@flatearthinc.com
 ----------------------------------------------------------------------------
 
 library IEEE;

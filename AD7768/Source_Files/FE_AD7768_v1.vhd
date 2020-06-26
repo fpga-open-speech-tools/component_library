@@ -4,7 +4,7 @@
 --! @details This 
 --! @author Tyler Davis
 --! @date 2020
---! @copyright Copyright 2020 Flat Earth Inc
+--! @copyright Copyright 2020 Audio Logic
 --
 -- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
 -- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
@@ -13,10 +13,10 @@
 -- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --
 -- Tyler Davis
--- Flat Earth Inc
+-- Audio Logic
 -- 985 Technology Blvd
 -- Bozeman, MT 59718
--- support@flatearthinc.com
+-- openspeech@flatearthinc.com
 ----------------------------------------------------------------------------
 
 library IEEE;
