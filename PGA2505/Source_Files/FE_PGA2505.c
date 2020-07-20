@@ -166,7 +166,7 @@ static int PGA2505_init(void)
         .max_speed_hz = speed,
         .bus_num = 0,             // Determined from /sys/class/spi_master
         .chip_select = 1,
-        .mode = 0,
+        .mode = 3,
     };
 
     /*To send data we have to know what spi port/pins should be used. This information

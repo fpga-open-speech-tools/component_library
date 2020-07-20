@@ -173,7 +173,7 @@ set_interface_property mic_input associatedReset reset
 set_interface_property mic_input dataBitsPerSymbol 32
 set_interface_property mic_input errorDescriptor ""
 set_interface_property mic_input firstSymbolInHighOrderBits true
-set_interface_property mic_input maxChannel 0
+set_interface_property mic_input maxChannel 15
 set_interface_property mic_input readyLatency 0
 set_interface_property mic_input ENABLED true
 set_interface_property mic_input EXPORT_OF ""
