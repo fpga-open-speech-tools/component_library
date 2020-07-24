@@ -1,3 +1,4 @@
+.tmp_versions/
 .qsys_edit/
 *.cmd
 *.mod.*
