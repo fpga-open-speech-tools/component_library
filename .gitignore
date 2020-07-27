@@ -1,1 +1,10 @@
+.tmp_versions/
 .qsys_edit/
+*.cmd
+*.mod.*
+*.mod
+*.ko
+*.o
+Module.symvers
+modules.order
+*.tcl~
