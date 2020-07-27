@@ -40,8 +40,8 @@ set_fileset_property QUARTUS_SYNTH TOP_LEVEL AD1939_hps_audio_mini
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file AD1939_hps_audio_mini_v1.vhd VHDL PATH AD1939_hps_audio_mini_v1.vhd TOP_LEVEL_FILE
-add_fileset_file Parallel2Serial_32bits.vhd VHDL PATH ../../serdes/Parallel2Serial_32bits.vhd
-add_fileset_file Serial2Parallel_32bits.vhd VHDL PATH ../../serdes/Serial2Parallel_32bits.vhd
+add_fileset_file Parallel2Serial_32bits.vhd VHDL PATH ../serdes/Parallel2Serial_32bits.vhd
+add_fileset_file Serial2Parallel_32bits.vhd VHDL PATH ../serdes/Serial2Parallel_32bits.vhd
 
 
 # 
