@@ -1,12 +1,16 @@
 /** @file
 
-    This kernel driver controls the gain of the PGA2505 microphone preamp.
+  This kernel driver controls the gain of the PGA2505 microphone preamp.
 
-    1)  The devices will load in /dev as fe_PGA2505_NNN and little endian files containing 32bit fixed point values can be passed into this
-    to update the cofficient files.  Number of coefficients are automatically computed from the length of this file.  Conversly, this entry can be read to read out the values currently loaded in the the hardware.
+  @copyright Copyright 2020 Audio Logic Inc
 
-    @author Tyler Davis
-    @copyright 2019 FlatEarth Inc, Bozeman MT
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+  Tyler Davis
+  Audio Logic Inc
+  985 Technology Blvd
+  Bozeman, MT 59718
+  openspeech@flatearthinc.com
 */
 
 #include <linux/module.h>
@@ -20,21 +24,17 @@
 #include <linux/regmap.h>
 #include <linux/spi/spi.h>
 
-// Define the number of DACs on the hardware
-#define NDAC 2
-
-// Define the number of bytes to make the command
-#define NCMD 2
-
-char cmd[NDAC * NCMD];
-
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tyler Davis <openspeech@flatearthinc.com>");
 MODULE_DESCRIPTION("Loadable kernel module for the PGA2505");
 MODULE_VERSION("1.0");
 
-// Index of the first negative value in the look up table below
+// Define the number of amplifiers on the hardware
+#define NAMP 2
+
+// Define the number of bytes to make the command
+#define NCMD 2
 
 struct fixed_num
 {
@@ -69,8 +69,8 @@ uint32_t set_fixed_num(const char *s);
 int fp_to_string(char *buf, uint32_t fp28_num);
 uint8_t find_volume_level(uint32_t fp28_num);
 uint32_t decode_volume(uint8_t code);
-uint16_t encode_led(uint8_t code);
-void fill_cmd_array(char *single_cmd);
+uint8_t encode_gpio(uint8_t code);
+void fill_cmd_array(char *cmd, uint8_t code, uint8_t defreg);
 
 //Create the attributes that show up in /sys/class
 static DEVICE_ATTR(volume,          0664, volume_read,          volume_write);
@@ -139,12 +139,20 @@ static const struct file_operations fe_PGA2505_fops =
 static int PGA2505_init(void)
 {
     int ret_val = 0;
+    int i = 0;
 
     // Add the spi master
     struct spi_master *master;
 
     // Initialize the command array, disable all servos, zero crossing, and over range detection
-    char single_cmd[2] = {0x80,0x00};
+    char cmd[NAMP*NCMD];
+    
+    for (i = 0; i < NAMP*NCMD; i++)
+      cmd[i] = 0x00;
+    
+    uint8_t def_config = 0x80;
+    uint8_t code = 0x00;
+    
 
     pr_info("Initializing the Audio Logic PGA2505 module\n");
 
@@ -155,10 +163,6 @@ static int PGA2505_init(void)
         pr_err("platform_driver_register returned %d\n", ret_val);
         return ret_val;
     }
-
-   /*------------------------------------------------------------------
-    This SPI initialization is based off code written by Piktas Zuikis
-    ------------------------------------------------------------------*/
 
     // Register the device
     struct spi_board_info spi_device_info = {
@@ -186,7 +190,7 @@ static int PGA2505_init(void)
         return -ENODEV;
     }
 
-    printk("Set the bits per word\n");
+    printk("Setting the bits per word\n");
     spi_device->bits_per_word = bits;
 
     printk("Setting up the device\n");
@@ -201,14 +205,8 @@ static int PGA2505_init(void)
     printk("Sending SPI initialization commands...\n");
 
     // Set the gain to 0 dB
-    single_cmd[1] = 0x00;
-    fill_cmd_array(single_cmd);
+    fill_cmd_array(cmd,encode_gpio(code),def_config);
     ret_val = spi_write(spi_device,&cmd, sizeof(cmd));
-    //printk("%d\n",ret_val);
-
-    /*------------------------------------------------------------------
-    --------------------------------------------------------------------
-    ------------------------------------------------------------------*/
 
     pr_info("Audio Logic PGA2505 module successfully initialized!\n");
 
@@ -473,11 +471,18 @@ static ssize_t volume_write(struct device *dev, struct device_attribute *attr, c
     char substring[80];
     int substring_count = 0;
     int i;
-    char defreg = 0x80;
-    char single_cmd[2] = {0x00,0x00};
+    int ret_val;
+    
+    uint8_t def_config = 0x80;
     uint8_t code = 0x00;
 
-    // Create a new instance of the TPA
+    char cmd[NAMP * NCMD];
+    
+    for (i = 0; i < NAMP*NCMD; i++)
+      cmd[i] = 0x00;
+    
+
+    // Create a new instance of the PGA
     fe_PGA2505_dev_t *devp = (fe_PGA2505_dev_t *)dev_get_drvdata(dev);
 
     for (i = 0; i < count; i++)
@@ -498,22 +503,13 @@ static ssize_t volume_write(struct device *dev, struct device_attribute *attr, c
 
     // Determine the closest volume level
     tempValue = decode_volume(code);
-    printk("volume %d", tempValue);
 
     // Record the volume level to the volume variable
     devp->volume = tempValue;
 
-    // Send the SPI command
-    printk("before single cmd\n");
-    single_cmd[1] = defreg | encode_led(code);
-    single_cmd[0] = code;
-    printk("after single cmd\n");
-    printk("0x%x 0x%x\n", single_cmd[0], single_cmd[1]);
-    printk("cmd before: 0x%x\n",cmd);
-    fill_cmd_array(single_cmd);
-    printk("cmd after: 0x%x\n",cmd);
-    spi_write(spi_device,&cmd, sizeof(cmd));
-    printk("after spi write\n");
+    // Populate the SPI command and send it
+    fill_cmd_array(cmd,encode_gpio(code),def_config);
+    ret_val = spi_write(spi_device,&cmd, sizeof(cmd));
 
     return count;
 }
@@ -728,20 +724,16 @@ int fp_to_string(char *buf, uint32_t fp28_num)
 */
 uint8_t find_volume_level(uint32_t fp28_num)
 {
-  printk("fp28_num %d", fp28_num);
   // Initialize the volume level
   uint8_t volume_level = 0;
 
   // Divide the input number by the reciprocal of the step size
   uint32_t inputnum = (fp28_num*10)/3;
-  printk("inputnum %d", inputnum);
 
   // Find the integer portion and the tenths portion
   // (Steps are in 3/8 increments so only that position is needed)
   uint16_t upperval = (uint16_t)((inputnum)>>16)/10;
   uint16_t lowerval = inputnum-upperval*10;
-
-  printk("upperval: %d | lowerval: %d\n",upperval,lowerval);
 
   // Catch whether the user exceeded the maximum attenuation
   // This number includes the 6 dB offset (2)
@@ -751,7 +743,7 @@ uint8_t find_volume_level(uint32_t fp28_num)
     upperval = 18;
     lowerval = 0;
     printk("Input exceeds the maximum amplification of 60 dB.\n");
-    printk("Setting attenuation to 60 dB.\n");
+    printk("Setting amplification to 60 dB.\n");
   }
   // If the input is less than one step below the minimum attenuation,
   // set the code to zero
@@ -759,13 +751,14 @@ uint8_t find_volume_level(uint32_t fp28_num)
   {
     upperval = 0;
     lowerval = 0;
+    printk("Input is below minimum amplification of 6 dB.\n");
+    printk("Setting amplification to 9 dB.\n");
   }
   // Otherwise, the gain is between 9 and 60 dB
   else
     upperval = upperval - 2; // Subtract the 6 dB offset
 
   // Set the volume level to the integer portion
-  printk("upperval %d", upperval);
   volume_level = (uint8_t)(upperval);
 
   // If the tenths portion is greater than five, round up
@@ -794,35 +787,56 @@ uint32_t decode_volume(uint8_t code)
 }
 
 
-/** Converts an 8 bit volume level representation to an 8 bit LED code
+/** Converts an 8 bit volume level representation to a 6 bit LED code.  This code is
+    tied to the hardware configuration of the AD1939 Expansion card for the Audio 
+    Blade.  The mapping of GPIO to LEDs is as follows:
+
+    ------------------------------------------------------
+    | GPIO | U8.2 | U8.1 | U10.2 | U10.1 | U10.4 | U10.3 |
+    |-----------------------------------------------------
+    | LED  | LED1 | LED2 | LED3  | LED4  | LED5  | LED6  |
+    ------------------------------------------------------
+
     @param code an 8 bit representation of the attenuation
     @return 8 bit representation of and LED gain level
 */
-uint16_t encode_led(uint8_t code)
+uint8_t encode_gpio(uint8_t code)
 {
   // Divide the range of 1 to 18 relatively evenly
   if (code == 0)
-    return 0x00;
+    return 0x80;
   else if (code < 4)
-    return 0x01;
+    return 0xA0;
   else if (code < 7)
-    return 0x03;
-  else if (code < 11)
-    return 0x07;
+    return 0xB0;
+  else if (code < 10)
+    return 0xB2;
+  else if (code < 13)
+    return 0xB3;
+  else if (code < 16)
+    return 0xBB;
   else
-    return 0x0F;
+    return 0xBF;
 }
 
-void fill_cmd_array(char *single_cmd)
+/** Custom function to fill the command array to map the custom GPIO behaviors.
+    This function should be overwritten for other designs.
+
+   @param code an 8 bit integer representing the GPIO configuration
+   @param defreg an 8 bit integer representing the default configuration of the PGA2505
+*/
+void fill_cmd_array(char* cmd, uint8_t code,uint8_t defreg)
 {
-  int i,j;
-  for (i = 0; i < NDAC; i++)
-    for (j = 0; j < NCMD; j++)
-    {
-        cmd[j + i * NCMD] = single_cmd[j];
-        printk("single_mcd[j]: %x", single_cmd[j]);
-        printk("cmd[j+1*NCMD]: %x", cmd[j+i*NCMD]);
-    }
+    int i;
+    uint8_t bitmask = 0x0F;
+    
+
+    // Set the default configuration for all PGA2505s in the chain
+    for (i=0; i < NAMP; i++)
+      cmd[i*NCMD] = cmd[i*NCMD] | defreg;
+    
+    cmd[1] = cmd[1] | (bitmask & code);
+    cmd[3] = cmd[3] | code>>4;
 }
 
 /** Tell the kernel what the initialization function is */
