@@ -38,3 +38,10 @@ The device driver has the following attributes exposed in [sysfs](https://www.ke
 - `dac4_right_volume`: read/write the right channel volume for DAC 4
 
 The volume attributes are specified as negative numbers in decibels. 
+
+### Example Usage
+Set the left and right volume of DAC1 to -10 dB:
+```bash
+echo -10 > /sys/class/fe_AD1939_248/fe_AD1949_248/dac1_left_volume
+echo -10 > /sys/class/fe_AD1939_248/fe_AD1949_248/dac1_right_volume
+```
