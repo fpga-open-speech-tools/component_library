@@ -37,6 +37,7 @@ use ieee.numeric_std.all;
 entity AD1939_hps_audio_research is
     port
     (   
+      --# {{clocks|}}
       sys_clk                     : in     std_logic;  -- FPGA system fabric clock  (Note: sys_clk is assumed to be faster and synchronous to the AD1939 sample rate clock and bit clock, typically one generates sys_clk using a PLL that is N * AD1939_ADC_ALRCLK)
       sys_reset                   : in     std_logic;  -- FPGA system fabric reset
       -------------------------------------------------------------------------------------------------------------------------------------
@@ -44,21 +45,30 @@ entity AD1939_hps_audio_research is
       -- Note: ASDATA1 from ADC and DSDATA2, DSDATA3, DSDATA4 to DAC are not used since these are not present on the Audio Mini board.
       --       AD1939 register control is connected via the AD1939 SPI Control Port and controlled with the HPS SPI, so no control port in this component.
       -------------------------------------------------------------------------------------------------------------------------------------
+
+      --# {{data|Codec ADC Data}}
       -- physical signals from ADC
       AD1939_ADC_ASDATA1          : in     std_logic;   -- Serial data from AD1939 pin 26 ASDATA2, ADC2 24-bit normal stereo serial mode
       AD1939_ADC_ASDATA2          : in     std_logic;   -- Serial data from AD1939 pin 26 ASDATA2, ADC2 24-bit normal stereo serial mode
+
+
+      --# {{clocks|Codec ADC Clocks}}
+
       AD1939_ADC_ABCLK            : in     std_logic;   -- Bit Clock from ADC (Master Mode) from pin 28 ABCLK on AD1939;  Note: bit clock = 64 * Fs, Fs = sample rate
       AD1939_ADC_ALRCLK           : in     std_logic;   -- Left/Right framing Clock from ADC (Master Mode) from pin 29 ALRCLK on AD1939;  Note: LR clock = Fs, Fs = sample rate
 
+      --# {{data|Codec DAC Data}}
       -- physical signals to DAC
       AD1939_DAC_DSDATA1          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
       AD1939_DAC_DSDATA2          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
       AD1939_DAC_DSDATA3          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
       AD1939_DAC_DSDATA4          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
 
+      --# {{clocks|Codec DAC Clocks}}
       AD1939_DAC_DBCLK            : out    std_logic;   -- Bit Clock for DAC (Slave Mode) to pin 21 DBCLK on AD1939
       AD1939_DAC_DLRCLK           : out    std_logic;   -- Left/Right framing Clock for DAC (Slave Mode) to pin 22 DLRCLK on AD1939
       
+      --# {{data|Avalon Streaming}}
       -----------------------------------------------------------------------------------------------------------
       -- Abstracted data channels, i.e. interface to the data plane as 24-bit data words.
       -- This is setup as a two channel Avalon Streaming Interface 
@@ -67,6 +77,7 @@ entity AD1939_hps_audio_research is
       -- Data is being clocked out at the sys_clk rate and valid is asserted only when data is present.  Left and right channels are specified as channel number (0 or 1)
       -- Data is converted to a W=32 (word length in bits), F=28 (number of fractional bits) before being sent out.
       -----------------------------------------------------------------------------------------------------------
+      --# {{data|Avalon Streaming}}
       -- Avalon streaming interface from ADC to fabric
       AD1939_ADC1_data         : out    std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
       AD1939_ADC1_channel      : out    std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1

@@ -3,12 +3,14 @@
 <svg xmlns="http://www.w3.org/2000/svg"
 xmlns:xlink="http://www.w3.org/1999/xlink"
 xml:space="preserve"
-width="780" height="482" viewBox="-190 -42 780.0 482.5" version="1.1">
+width="760" height="737" viewBox="-190 -42 760.0 737.5" version="1.1">
 <style type="text/css">
 <![CDATA[
 .fnt1 {fill:#000000;
     font-family:Helvetica; font-size:12pt; font-weight:normal; font-style:normal;}
 .fnt2 {fill:#000000;
+    font-family:Times; font-size:12pt; font-weight:normal; font-style:italic;}
+.fnt3 {fill:#000000;
     font-family:Helvetica; font-size:12pt; font-weight:bold; font-style:normal;}
 .label {fill:#000;
   text-anchor:middle;
@@ -25,7 +27,7 @@ width="780" height="482" viewBox="-190 -42 780.0 482.5" version="1.1">
 </marker>
 </defs>
 <rect x="-190" y="-42" width="100%" height="100%" fill="white"/><g transform="translate(0,0)">
-<rect x="0" y="-15.0" width="400" height="450.0" stroke="#000000" fill="#C5DBFC" stroke-width="1"/>
+<rect x="0" y="-15.0" width="380" height="50.0" stroke="#000000" fill="#FECFCF" stroke-width="1"/>
 <g transform="translate(0,0)">
 <line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1" marker-end="url(#clock)"/>
 <text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">sys_clk</text>
@@ -36,177 +38,197 @@ width="780" height="482" viewBox="-190 -42 780.0 482.5" version="1.1">
 <text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">sys_reset</text>
 <text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(0,40)">
+</g>
+<g transform="translate(0,50.0)">
+<rect x="0" y="-15.0" width="380" height="67.0" stroke="#000000" fill="#CCFED2" stroke-width="1"/>
+<text class="fnt2" x="190.0" y="0" text-anchor="middle" dy="2.5">Codec ADC Data</text>
+<g transform="translate(0,17)">
 <line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_ADC_ASDATA1</text>
 <text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(0,60)">
+<g transform="translate(0,37)">
 <line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_ADC_ASDATA2</text>
 <text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(0,80)">
+</g>
+<g transform="translate(0,117.0)">
+<rect x="0" y="-15.0" width="380" height="67.0" stroke="#000000" fill="#FECFCF" stroke-width="1"/>
+<text class="fnt2" x="190.0" y="0" text-anchor="middle" dy="2.5">Codec ADC Clocks</text>
+<g transform="translate(0,17)">
 <line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1" marker-end="url(#clock)"/>
 <text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_ADC_ABCLK</text>
 <text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(0,100)">
+<g transform="translate(0,37)">
 <line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1" marker-end="url(#clock)"/>
 <text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_ADC_ALRCLK</text>
 <text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(0,120)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_data</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
 </g>
-<g transform="translate(0,140)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_channel</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(0,160)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_valid</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
-</g>
-<g transform="translate(0,180)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_error</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(0,200)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_data</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
-</g>
-<g transform="translate(0,220)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_channel</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(0,240)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_valid</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
-</g>
-<g transform="translate(0,260)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_error</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(0,280)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_data</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
-</g>
-<g transform="translate(0,300)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_channel</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(0,320)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_valid</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
-</g>
-<g transform="translate(0,340)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_error</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(0,360)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_data</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
-</g>
-<g transform="translate(0,380)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_channel</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(0,400)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_valid</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
-</g>
-<g transform="translate(0,420)">
-<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_error</text>
-<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
-</g>
-<g transform="translate(400,0)">
+<g transform="translate(0,184.0)">
+<rect x="0" y="-15.0" width="380" height="107.0" stroke="#000000" fill="#CCFED2" stroke-width="1"/>
+<text class="fnt2" x="190.0" y="0" text-anchor="middle" dy="2.5">Codec DAC Data</text>
+<g transform="translate(380,17)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_DAC_DSDATA1</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,20)">
+<g transform="translate(380,37)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_DAC_DSDATA2</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,40)">
+<g transform="translate(380,57)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_DAC_DSDATA3</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,60)">
+<g transform="translate(380,77)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_DAC_DSDATA4</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,80)">
+</g>
+<g transform="translate(0,291.0)">
+<rect x="0" y="-15.0" width="380" height="67.0" stroke="#000000" fill="#FECFCF" stroke-width="1"/>
+<text class="fnt2" x="190.0" y="0" text-anchor="middle" dy="2.5">Codec DAC Clocks</text>
+<g transform="translate(380,17)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_DAC_DBCLK</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,100)">
+<g transform="translate(380,37)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_DAC_DLRCLK</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,120)">
+</g>
+<g transform="translate(0,358.0)">
+<rect x="0" y="-15.0" width="380" height="347.0" stroke="#000000" fill="#CCFED2" stroke-width="1"/>
+<text class="fnt2" x="190.0" y="0" text-anchor="middle" dy="2.5">Avalon Streaming</text>
+<g transform="translate(0,17)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_data</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
+</g>
+<g transform="translate(0,37)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_channel</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(0,57)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_valid</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
+</g>
+<g transform="translate(0,77)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC1_error</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(0,97)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_data</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
+</g>
+<g transform="translate(0,117)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_channel</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(0,137)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_valid</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
+</g>
+<g transform="translate(0,157)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC2_error</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(0,177)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_data</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
+</g>
+<g transform="translate(0,197)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_channel</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(0,217)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_valid</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
+</g>
+<g transform="translate(0,237)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC3_error</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(0,257)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_data</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
+</g>
+<g transform="translate(0,277)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_channel</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(0,297)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_valid</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic</text>
+</g>
+<g transform="translate(0,317)">
+<line x1="-20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt1" x="10" y="0" text-anchor="normal" dy="3.5">AD1939_DAC4_error</text>
+<text class="fnt1" x="-30" y="0" text-anchor="end" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
+</g>
+<g transform="translate(380,17)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC1_data</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
 </g>
-<g transform="translate(400,140)">
+<g transform="translate(380,37)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC1_channel</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
 </g>
-<g transform="translate(400,160)">
+<g transform="translate(380,57)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC1_valid</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,180)">
+<g transform="translate(380,77)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC1_error</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
 </g>
-<g transform="translate(400,200)">
+<g transform="translate(380,97)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC2_data</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[31:0]</tspan></text>
 </g>
-<g transform="translate(400,220)">
+<g transform="translate(380,117)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC2_channel</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
 </g>
-<g transform="translate(400,240)">
+<g transform="translate(380,137)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="1"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC2_valid</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic</text>
 </g>
-<g transform="translate(400,260)">
+<g transform="translate(380,157)">
 <line x1="20" y1="0" x2="0" y2="0" stroke="#000000" fill="none" stroke-width="3"/>
 <text class="fnt1" x="-10" y="0" text-anchor="end" dy="3.5">AD1939_ADC2_error</text>
 <text class="fnt1" x="30" y="0" text-anchor="normal" dy="3.5" style="fill:#969696">std_logic_vector<tspan fill="#039BE5">[1:0]</tspan></text>
 </g>
 </g>
-<rect x="1.0" y="-14.0" width="398.0" height="448.0" stroke="#000000" fill="none" stroke-width="3"/>
-<text class="fnt2" x="200.0" y="-24.0" text-anchor="middle" dy="-1.0">AD1939_hps_audio_research</text>
+<rect x="1.0" y="-14.0" width="378.0" height="703.0" stroke="#000000" fill="none" stroke-width="3"/>
+<text class="fnt3" x="190.0" y="-24.0" text-anchor="middle" dy="-1.0">AD1939_hps_audio_research</text>
 </svg>
