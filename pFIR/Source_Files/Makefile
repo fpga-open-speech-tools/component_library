@@ -1,4 +1,4 @@
-KDIR ?= /home/harthan/FPGA_Projects/linux-socfpga
+KDIR ?= ../../../linux-socfpga
 default:
 	$(MAKE) -C $(KDIR) ARCH=arm M=$(CURDIR)
 

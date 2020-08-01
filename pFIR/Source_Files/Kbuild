@@ -1,1 +1,1 @@
-obj-m := FE_pFIR.o
+obj-m := FE_DPRAM.o
