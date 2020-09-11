@@ -33,6 +33,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.ad1939.all;
 
 entity AD1939_hps_audio_mini is
     port
@@ -61,12 +62,12 @@ entity AD1939_hps_audio_mini is
         -- Data is converted to a W=32 (word length in bits), F=28 (number of fractional bits) before being sent out.
         -----------------------------------------------------------------------------------------------------------
         -- Avalon streaming interface from ADC to fabric
-        AD1939_ADC_data         : out    std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
+        AD1939_ADC_data         : out    std_logic_vector(word_length - 1  downto 0);  -- W=32; F=28; Signed 2's Complement
         AD1939_ADC_channel      : out    std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
         AD1939_ADC_valid        : out    std_logic;                      -- asserted when data is valid 
         AD1939_ADC_error        : out    std_logic_vector(1 downto 0);   -- error channel is hard coded to zero since it is assumed no errors coming for ADC
         -- Avalon streaming interface to DAC from fabric
-        AD1939_DAC_data         : in     std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
+        AD1939_DAC_data         : in     std_logic_vector(word_length - 1 downto 0);  -- W=32; F=28; Signed 2's Complement
         AD1939_DAC_channel      : in     std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
         AD1939_DAC_valid        : in     std_logic;                      -- asserted when data is valid 
         AD1939_DAC_error        : in     std_logic_vector(1 downto 0)   -- error channel is ignored, assumed to be error free at this point
@@ -113,10 +114,10 @@ architecture behavioral of AD1939_hps_audio_mini is
     -- Internal Signals
     --------------------------------------------------------------
     signal SregOut_ADC2             : std_logic_vector(31 downto 0);
-    signal SregOut_ADC2_28          : std_logic_vector(27 downto 0);
-    signal ADC2_data                : std_logic_vector(31 downto 0);
-    signal DAC1_data_left           : std_logic_vector(23 downto 0);
-    signal DAC1_data_right          : std_logic_vector(23 downto 0);
+    signal SregOut_ADC2_24          : std_logic_vector(word_length - 1 downto 0);
+    signal ADC2_data                : std_logic_vector(word_length - 1 downto 0);
+    signal DAC1_data_left           : std_logic_vector(31 downto 0);
+    signal DAC1_data_right          : std_logic_vector(31 downto 0);
     signal AD1939_DAC_DSDATA1_left  : std_logic;
     signal AD1939_DAC_DSDATA1_right : std_logic;
     
@@ -151,8 +152,7 @@ begin
    -- Then:  1. Add 4 more fractional bits to get a word that is W=28, F=28
    --        2. Sign extend to get a word that is W=32, F=28
    -------------------------------------------------------------    
-    SregOut_ADC2_28  <= SregOut_ADC2(30 downto 7) & "0000";                                   -- grab 24 parallel bits and append 4 fractional bits
-    ADC2_data        <= std_logic_vector(resize(signed(SregOut_ADC2_28), ADC2_data'length));  -- sign extend to W=32, the data format that is streamed to fabric
+    ADC2_data  <= SregOut_ADC2(30 downto 7);-- grab 24 parallel bits and append 4 fractional bits 
 
     --------------------------------------------------------------
     -- State Machine to implement Avalon streaming
@@ -246,9 +246,9 @@ begin
          if (rising_edge(sys_clk)) then
              if AD1939_DAC_valid  = '1' then  -- data has arrived
                  case AD1939_DAC_channel is
-                     when "00" => DAC1_data_left  <= AD1939_DAC_data(27 downto 4);  -- grab 24 bits out of the left channel that is W=32, F=28
-                     when "01" => DAC1_data_right <= AD1939_DAC_data(27 downto 4);  -- grab 24 bits out of the right channel that is W=32, F=28
-                     when others =>                                                 -- do nothing
+                     when "00" => DAC1_data_left  <= '0' & AD1939_DAC_data &"00000000"; 
+                     when "01" => DAC1_data_right <= '0' & AD1939_DAC_data & "00000000"; 
+                     when others => null;
                  end case;
              end if;
          end if;
@@ -259,7 +259,7 @@ begin
    -------------------------------------------------------------
     P2S_DAC1_left : Parallel2Serial_32bits PORT MAP (
         clock           => AD1939_ADC_ABCLK,
-        data            => '0' & DAC1_data_left & "0000000",          -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
+        data            => DAC1_data_left,          -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
         load            => AD1939_ADC_ALRCLK,                     -- load: loads when high, component performs shift operation when low.  LRCLK -> Left Low so start shifting when LRCK goes low
         shiftout        => AD1939_DAC_DSDATA1_left
     );
@@ -269,7 +269,7 @@ begin
    -------------------------------------------------------------
     P2S_DAC1_right : Parallel2Serial_32bits PORT MAP (
         clock           => AD1939_ADC_ABCLK,
-        data            => '0' & DAC1_data_right & "0000000",         -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
+        data            => DAC1_data_right,         -- Insert the 24-bits with a SDATA delay of 1 (SDATA dela set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
         load            => not AD1939_ADC_ALRCLK,                         -- load: loads when high, component performs shift operation when low.  LRCLK -> Right High so start shifting when not LRCK goes low
         shiftout        => AD1939_DAC_DSDATA1_right
     );

@@ -42,6 +42,7 @@ set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file AD1939_hps_audio_mini_v1.vhd VHDL PATH AD1939_hps_audio_mini_v1.vhd TOP_LEVEL_FILE
 add_fileset_file Parallel2Serial_32bits.vhd VHDL PATH ../serdes/Parallel2Serial_32bits.vhd
 add_fileset_file Serial2Parallel_32bits.vhd VHDL PATH ../serdes/Serial2Parallel_32bits.vhd
+add_fileset_file ad1939_pkg.vhd VHDL PATH ad1939_pkg.vhd
 
 
 # 
@@ -125,7 +126,7 @@ add_interface_port clk_alrclk AD1939_ADC_ALRCLK clk Input 1
 add_interface Line_In avalon_streaming start
 set_interface_property Line_In associatedClock sys_clk
 set_interface_property Line_In associatedReset sys_reset
-set_interface_property Line_In dataBitsPerSymbol 32
+set_interface_property Line_In dataBitsPerSymbol 24
 set_interface_property Line_In errorDescriptor ""
 set_interface_property Line_In firstSymbolInHighOrderBits true
 set_interface_property Line_In maxChannel 3
@@ -137,7 +138,7 @@ set_interface_property Line_In CMSIS_SVD_VARIABLES ""
 set_interface_property Line_In SVD_ADDRESS_GROUP ""
 
 add_interface_port Line_In AD1939_ADC_channel channel Output 2
-add_interface_port Line_In AD1939_ADC_data data Output 32
+add_interface_port Line_In AD1939_ADC_data data Output 24
 add_interface_port Line_In AD1939_ADC_error error Output 2
 add_interface_port Line_In AD1939_ADC_valid valid Output 1
 
@@ -148,7 +149,7 @@ add_interface_port Line_In AD1939_ADC_valid valid Output 1
 add_interface Headphone_Out avalon_streaming end
 set_interface_property Headphone_Out associatedClock sys_clk
 set_interface_property Headphone_Out associatedReset sys_reset
-set_interface_property Headphone_Out dataBitsPerSymbol 32
+set_interface_property Headphone_Out dataBitsPerSymbol 24
 set_interface_property Headphone_Out errorDescriptor ""
 set_interface_property Headphone_Out firstSymbolInHighOrderBits true
 set_interface_property Headphone_Out maxChannel 3
@@ -160,7 +161,7 @@ set_interface_property Headphone_Out CMSIS_SVD_VARIABLES ""
 set_interface_property Headphone_Out SVD_ADDRESS_GROUP ""
 
 add_interface_port Headphone_Out AD1939_DAC_channel channel Input 2
-add_interface_port Headphone_Out AD1939_DAC_data data Input 32
+add_interface_port Headphone_Out AD1939_DAC_data data Input 24
 add_interface_port Headphone_Out AD1939_DAC_error error Input 2
 add_interface_port Headphone_Out AD1939_DAC_valid valid Input 1
 
