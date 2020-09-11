@@ -129,7 +129,7 @@ set_interface_property Line_In associatedReset sys_reset
 set_interface_property Line_In dataBitsPerSymbol 24
 set_interface_property Line_In errorDescriptor ""
 set_interface_property Line_In firstSymbolInHighOrderBits true
-set_interface_property Line_In maxChannel 3
+set_interface_property Line_In maxChannel 1
 set_interface_property Line_In readyLatency 0
 set_interface_property Line_In ENABLED true
 set_interface_property Line_In EXPORT_OF ""
@@ -137,9 +137,8 @@ set_interface_property Line_In PORT_NAME_MAP ""
 set_interface_property Line_In CMSIS_SVD_VARIABLES ""
 set_interface_property Line_In SVD_ADDRESS_GROUP ""
 
-add_interface_port Line_In AD1939_ADC_channel channel Output 2
+add_interface_port Line_In AD1939_ADC_channel channel Output 1
 add_interface_port Line_In AD1939_ADC_data data Output 24
-add_interface_port Line_In AD1939_ADC_error error Output 2
 add_interface_port Line_In AD1939_ADC_valid valid Output 1
 
 
@@ -152,7 +151,7 @@ set_interface_property Headphone_Out associatedReset sys_reset
 set_interface_property Headphone_Out dataBitsPerSymbol 24
 set_interface_property Headphone_Out errorDescriptor ""
 set_interface_property Headphone_Out firstSymbolInHighOrderBits true
-set_interface_property Headphone_Out maxChannel 3
+set_interface_property Headphone_Out maxChannel 1
 set_interface_property Headphone_Out readyLatency 0
 set_interface_property Headphone_Out ENABLED true
 set_interface_property Headphone_Out EXPORT_OF ""
@@ -160,9 +159,8 @@ set_interface_property Headphone_Out PORT_NAME_MAP ""
 set_interface_property Headphone_Out CMSIS_SVD_VARIABLES ""
 set_interface_property Headphone_Out SVD_ADDRESS_GROUP ""
 
-add_interface_port Headphone_Out AD1939_DAC_channel channel Input 2
+add_interface_port Headphone_Out AD1939_DAC_channel channel Input 1
 add_interface_port Headphone_Out AD1939_DAC_data data Input 24
-add_interface_port Headphone_Out AD1939_DAC_error error Input 2
 add_interface_port Headphone_Out AD1939_DAC_valid valid Input 1
 
 

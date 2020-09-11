@@ -64,14 +64,12 @@ entity ad1939_hps_audio_mini is
     -----------------------------------------------------------------------------------------------------------
     -- avalon streaming interface from adc to fabric
     ad1939_adc_data    : out   std_logic_vector(word_length - 1  downto 0); -- w=32; f=28; signed 2's complement
-    ad1939_adc_channel : out   std_logic_vector(1 downto 0);                -- left <-> channel 0;  right <-> channel 1
+    ad1939_adc_channel : out   std_logic;                -- left <-> channel 0;  right <-> channel 1
     ad1939_adc_valid   : out   std_logic;                                   -- asserted when data is valid
-    ad1939_adc_error   : out   std_logic_vector(1 downto 0);                -- error channel is hard coded to zero since it is assumed no errors coming for adc
     -- avalon streaming interface to dac from fabric
     ad1939_dac_data    : in    std_logic_vector(word_length - 1 downto 0); -- w=32; f=28; signed 2's complement
-    ad1939_dac_channel : in    std_logic_vector(1 downto 0);               -- left <-> channel 0;  right <-> channel 1
-    ad1939_dac_valid   : in    std_logic;                                  -- asserted when data is valid
-    ad1939_dac_error   : in    std_logic_vector(1 downto 0)                -- error channel is ignored, assumed to be error free at this point
+    ad1939_dac_channel : in    std_logic;               -- left <-> channel 0;  right <-> channel 1
+    ad1939_dac_valid   : in    std_logic                                  -- asserted when data is valid
   );
 end entity ad1939_hps_audio_mini;
 
@@ -124,7 +122,7 @@ architecture behavioral of ad1939_hps_audio_mini is
 
   -- register the output
   signal ad1939_adc_valid_r   : std_logic;
-  signal ad1939_adc_channel_r : std_logic_vector(1 downto 0);
+  signal ad1939_adc_channel_r : std_logic;
 
 begin
 
@@ -136,7 +134,6 @@ begin
   ----------------------------------------------------------------------------
   ad1939_dac_dbclk  <= ad1939_adc_abclk;
   ad1939_dac_dlrclk <= ad1939_adc_alrclk;
-  ad1939_adc_error  <= "00"; -- no errors coming from adc so hardcode avalon error signal as zero.
 
   -------------------------------------------------------------
   -- convert serial data stream to parallel
@@ -164,7 +161,7 @@ begin
 
     if (sys_reset = '1') then
       state <= state_left_wait;
-    elsif (sys_clk'event and sys_clk = '1') then
+    elsif (rising_edge(sys_clk)) then
 
       case state is
 
@@ -213,9 +210,8 @@ begin
   process (sys_clk) is
   begin
 
-    if (sys_clk'event and sys_clk = '1') then
+    if (rising_edge(sys_clk)) then
       ad1939_adc_valid_r   <= '0';  -- default behavior is valid low  (signifies no data)
-      ad1939_adc_channel_r <= "11"; -- default channel number is 3    (signifies no data)
 
       case state is
 
@@ -223,24 +219,26 @@ begin
         -- get left sample
         ---------------------------------------------
         when state_left_wait =>
+          null;
         when state_left_capture =>
           ad1939_adc_data <= adc2_data; -- send out data in w=32, f=28 format
         when state_left_valid =>
           ad1939_adc_valid_r   <= '1';  -- valid signal
-          ad1939_adc_channel_r <= "00"; -- left channel is channel 0
+          ad1939_adc_channel_r <= '0'; -- left channel is channel 0
 
         ---------------------------------------------
         -- get right sample
         ---------------------------------------------
         when state_right_wait =>
+          null;
         when state_right_capture =>
           ad1939_adc_data <= adc2_data; -- send out data in w=32, f=28 format
         when state_right_valid =>
           ad1939_adc_valid_r   <= '1';  -- valid signal
-          ad1939_adc_channel_r <= "01"; -- right channel is channel 1
+          ad1939_adc_channel_r <= '1'; -- right channel is channel 1
 
         when others =>
-          -- do nothing
+          null;
 
       end case;
 
@@ -255,14 +253,14 @@ begin
   process (sys_clk) is
   begin
 
-    if (sys_clk'event and sys_clk = '1') then
+    if (rising_edge(sys_clk)) then
       if (ad1939_dac_valid  = '1') then -- data has arrived
 
         case ad1939_dac_channel is
 
-          when "00" =>
+          when '0' =>
             dac1_data_left <= '0' & ad1939_dac_data & "0000000";
-          when "01" =>
+          when '1' =>
             dac1_data_right <= '0' & ad1939_dac_data & "0000000";
           when others =>
             null;
