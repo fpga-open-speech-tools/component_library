@@ -63,7 +63,12 @@ int fp_to_string(char * buf, uint32_t fp_num, size_t fractional_bits, bool is_si
   }
   if (is_signed) {  // if it signed, need to add '-' to the buffer as well as remove that bit from the bitstring
     if (fp_num & 0x80000000) {
+      uint32_t toggle_mask = 0xFFFFFFFF;
+
       buf[buf_index++] = '-';
+      // Make 2's complement value positive since only the magnitude is used below
+      fp_num ^= toggle_mask;
+      fp_num += 1;
     }
     fp_num = fp_num & 0x7fffffff;
   }
@@ -155,7 +160,10 @@ uint32_t set_fixed_num(const char * s, int num_fractional_bits, bool is_signed) 
   }
   accumulator += int_part_decimal << num_fractional_bits;
   if (is_signed && s[0] == '-') {
-    accumulator |= 0x80000000; // if its a signed int and theres a negative sign flip the first bit of accumulator
+    // Wrong this is just doing sign-magnitude and we need 2's complement
+    uint32_t toggle_mask = 0xFFFFFFFF;
+    accumulator ^= toggle_mask;
+    accumulator += 1;
   }
   return accumulator;
 }
