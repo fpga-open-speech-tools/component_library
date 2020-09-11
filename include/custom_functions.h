@@ -160,7 +160,6 @@ uint32_t set_fixed_num(const char * s, int num_fractional_bits, bool is_signed) 
   }
   accumulator += int_part_decimal << num_fractional_bits;
   if (is_signed && s[0] == '-') {
-    // Wrong this is just doing sign-magnitude and we need 2's complement
     uint32_t toggle_mask = 0xFFFFFFFF;
     accumulator ^= toggle_mask;
     accumulator += 1;
