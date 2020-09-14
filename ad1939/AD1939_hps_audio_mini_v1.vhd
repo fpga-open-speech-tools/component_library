@@ -147,10 +147,8 @@ begin
 
   -------------------------------------------------------------
   -- get the 24-bits with a sdata delay of 1 (sdata delay set in adc control 1 register; see table 24 page 27 of ad1939 data sheet)
-  -- then:  1. add 4 more fractional bits to get a word that is w=28, f=28
-  --        2. sign extend to get a word that is w=32, f=28
   -------------------------------------------------------------
-  adc2_data <= sregout_adc2(30 downto 7); -- grab 24 parallel bits and append 4 fractional bits
+  adc2_data <= sregout_adc2(30 downto 7); 
 
   --------------------------------------------------------------
   -- state machine to implement avalon streaming
@@ -211,7 +209,7 @@ begin
   begin
 
     if (rising_edge(sys_clk)) then
-      ad1939_adc_valid_r   <= '0';  -- default behavior is valid low  (signifies no data)
+      ad1939_adc_valid_r   <= '0';  -- default behavior is valid low  (signifies no new data)
 
       case state is
 
@@ -221,10 +219,10 @@ begin
         when state_left_wait =>
           null;
         when state_left_capture =>
-          ad1939_adc_data <= adc2_data; -- send out data in w=32, f=28 format
+          ad1939_adc_data <= adc2_data; 
         when state_left_valid =>
-          ad1939_adc_valid_r   <= '1';  -- valid signal
-          ad1939_adc_channel_r <= '0'; -- left channel is channel 0
+          ad1939_adc_valid_r   <= '1';  
+          ad1939_adc_channel_r <= '0'; 
 
         ---------------------------------------------
         -- get right sample
@@ -232,11 +230,10 @@ begin
         when state_right_wait =>
           null;
         when state_right_capture =>
-          ad1939_adc_data <= adc2_data; -- send out data in w=32, f=28 format
+          ad1939_adc_data <= adc2_data; 
         when state_right_valid =>
-          ad1939_adc_valid_r   <= '1';  -- valid signal
-          ad1939_adc_channel_r <= '1'; -- right channel is channel 1
-
+          ad1939_adc_valid_r <= '1';
+          ad1939_adc_channel_r <= '1';
         when others =>
           null;
 
@@ -258,6 +255,8 @@ begin
 
         case ad1939_dac_channel is
 
+          -- data is in i2s-justified mode, which has one empty bit 
+          -- before the MSB. See Fig. 23 on page 21 of the AD1939 datasheet
           when '0' =>
             dac1_data_left <= '0' & ad1939_dac_data & "0000000";
           when '1' =>
@@ -297,15 +296,13 @@ begin
   ------------------------------------------------------------------
   -- interleave the left/right serial data that goes out to the dac
   ------------------------------------------------------------------
-  process (ad1939_adc_alrclk) is
+  process (ad1939_adc_alrclk, ad1939_dac_dsdata1_left, ad1939_dac_dsdata1_right) is
   begin
-
     if (ad1939_adc_alrclk = '0') then
-      ad1939_dac_dsdata1 <= ad1939_dac_dsdata1_left; -- when lrclk is 1, stream out the left channel   (left-justified mode;  see figure 23 on page 21 of ad1939 data sheet)
+      ad1939_dac_dsdata1 <= ad1939_dac_dsdata1_left; 
     else
       ad1939_dac_dsdata1 <= ad1939_dac_dsdata1_right;
     end if;
-
   end process;
 
   -- map the output adc signals to the ports
