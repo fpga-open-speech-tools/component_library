@@ -5,10 +5,10 @@
 --
 -- Create Date:      06/29/2018
 --
--- Design Name:      AD1939_hps_audio_research.vhd  
---                      
+-- Design Name:      AD1939_hps_audio_research.vhd
+--
 -- Description:      The AD1939_hps_audio_research component does the following:
---                         1. Provides a simple Qsys data interface for to the AD1939 Audio Codec 
+--                         1. Provides a simple Qsys data interface for to the AD1939 Audio Codec
 --                         2. Note: It is assumed that the AD1939 SPI Control Interface is connected to the SPI master of the Cyclone V HPS, thus there is no control interface in this component.
 --                            -- Signals to/from AD1939 SPI Control Port (data direction from AD1939 perspective), connection to physical pins on AD1939
 --                            -- 10 MHz CCLK max (see page 7 of AD1939 data sheet)
@@ -28,485 +28,486 @@
 --
 -- Revisions:        1.0 (File Created)
 --
--- Additional Comments: 
+-- Additional Comments:
 ----------------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity AD1939_hps_audio_research is
-    port
-    (   
-      sys_clk                     : in     std_logic;  -- FPGA system fabric clock  (Note: sys_clk is assumed to be faster and synchronous to the AD1939 sample rate clock and bit clock, typically one generates sys_clk using a PLL that is N * AD1939_ADC_ALRCLK)
-      sys_reset                   : in     std_logic;  -- FPGA system fabric reset
-      -------------------------------------------------------------------------------------------------------------------------------------
-      -- AD1939 Physical Layer : Signals to/from AD1939 Serial Data Port (from ADCs/to DACs), i.e. connection to physical pins on AD1939
-      -- Note: ASDATA1 from ADC and DSDATA2, DSDATA3, DSDATA4 to DAC are not used since these are not present on the Audio Mini board.
-      --       AD1939 register control is connected via the AD1939 SPI Control Port and controlled with the HPS SPI, so no control port in this component.
-      -------------------------------------------------------------------------------------------------------------------------------------
-      -- physical signals from ADC
-      AD1939_ADC_ASDATA1          : in     std_logic;   -- Serial data from AD1939 pin 26 ASDATA2, ADC2 24-bit normal stereo serial mode
-      AD1939_ADC_ASDATA2          : in     std_logic;   -- Serial data from AD1939 pin 26 ASDATA2, ADC2 24-bit normal stereo serial mode
-      AD1939_ADC_ABCLK            : in     std_logic;   -- Bit Clock from ADC (Master Mode) from pin 28 ABCLK on AD1939;  Note: bit clock = 64 * Fs, Fs = sample rate
-      AD1939_ADC_ALRCLK           : in     std_logic;   -- Left/Right framing Clock from ADC (Master Mode) from pin 29 ALRCLK on AD1939;  Note: LR clock = Fs, Fs = sample rate
+use work.ad1939.all;
 
-      -- physical signals to DAC
-      AD1939_DAC_DSDATA1          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
-      AD1939_DAC_DSDATA2          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
-      AD1939_DAC_DSDATA3          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
-      AD1939_DAC_DSDATA4          : out    std_logic;   -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
+entity ad1939_hps_audio_research is
+  port (
+    sys_clk   : in    std_logic; -- FPGA system fabric clock  (Note: sys_clk is assumed to be faster and synchronous to the AD1939 sample rate clock and bit clock, typically one generates sys_clk using a PLL that is N * AD1939_ADC_ALRCLK)
+    sys_reset : in    std_logic; -- FPGA system fabric reset
+    -------------------------------------------------------------------------------------------------------------------------------------
+    -- AD1939 Physical Layer : Signals to/from AD1939 Serial Data Port (from ADCs/to DACs), i.e. connection to physical pins on AD1939
+    -- Note: ASDATA1 from ADC and DSDATA2, DSDATA3, DSDATA4 to DAC are not used since these are not present on the Audio Mini board.
+    --       AD1939 register control is connected via the AD1939 SPI Control Port and controlled with the HPS SPI, so no control port in this component.
+    -------------------------------------------------------------------------------------------------------------------------------------
+    -- physical signals from ADC
+    ad1939_adc_asdata1 : in    std_logic; -- Serial data from AD1939 pin 26 ASDATA2, ADC2 24-bit normal stereo serial mode
+    ad1939_adc_asdata2 : in    std_logic; -- Serial data from AD1939 pin 26 ASDATA2, ADC2 24-bit normal stereo serial mode
+    ad1939_adc_abclk   : in    std_logic; -- Bit Clock from ADC (Master Mode) from pin 28 ABCLK on AD1939;  Note: bit clock = 64 * Fs, Fs = sample rate
+    ad1939_adc_alrclk  : in    std_logic; -- Left/Right framing Clock from ADC (Master Mode) from pin 29 ALRCLK on AD1939;  Note: LR clock = Fs, Fs = sample rate
 
-      AD1939_DAC_DBCLK            : out    std_logic;   -- Bit Clock for DAC (Slave Mode) to pin 21 DBCLK on AD1939
-      AD1939_DAC_DLRCLK           : out    std_logic;   -- Left/Right framing Clock for DAC (Slave Mode) to pin 22 DLRCLK on AD1939
-      
-      -----------------------------------------------------------------------------------------------------------
-      -- Abstracted data channels, i.e. interface to the data plane as 24-bit data words.
-      -- This is setup as a two channel Avalon Streaming Interface 
-      -- See table 17, page 41, of Intel's Avalon� Streaming Interface Specifications
-      -- https://www.altera.com/content/dam/altera-www/global/en_US/pdfs/literature/manual/mnl_avalon_spec.pdf
-      -- Data is being clocked out at the sys_clk rate and valid is asserted only when data is present.  Left and right channels are specified as channel number (0 or 1)
-      -- Data is converted to a W=32 (word length in bits), F=28 (number of fractional bits) before being sent out.
-      -----------------------------------------------------------------------------------------------------------
-      -- Avalon streaming interface from ADC to fabric
-      AD1939_ADC1_data         : out    std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
-      AD1939_ADC1_channel      : out    std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
-      AD1939_ADC1_valid        : out    std_logic;                      -- asserted when data is valid 
-      AD1939_ADC1_error        : out    std_logic_vector(1 downto 0);   -- error channel is hard coded to zero since it is assumed no errors coming for ADC
+    -- physical signals to DAC
+    ad1939_dac_dsdata1 : out   std_logic; -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
+    ad1939_dac_dsdata2 : out   std_logic; -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
+    ad1939_dac_dsdata3 : out   std_logic; -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
+    ad1939_dac_dsdata4 : out   std_logic; -- Serial data to AD1939 pin 20 DSDATA1, DAC1 24-bit normal stereo serial mode
 
-      AD1939_ADC2_data         : out    std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
-      AD1939_ADC2_channel      : out    std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
-      AD1939_ADC2_valid        : out    std_logic;                      -- asserted when data is valid 
-      AD1939_ADC2_error        : out    std_logic_vector(1 downto 0);   -- error channel is hard coded to zero since it is assumed no errors coming for ADC
+    ad1939_dac_dbclk  : out   std_logic; -- Bit Clock for DAC (Slave Mode) to pin 21 DBCLK on AD1939
+    ad1939_dac_dlrclk : out   std_logic; -- Left/Right framing Clock for DAC (Slave Mode) to pin 22 DLRCLK on AD1939
 
-      -- Avalon streaming interface to DAC from fabric
-      AD1939_DAC1_data         : in     std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
-      AD1939_DAC1_channel      : in     std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
-      AD1939_DAC1_valid        : in     std_logic;                      -- asserted when data is valid 
-      AD1939_DAC1_error        : in     std_logic_vector(1 downto 0);   -- error channel is ignored, assumed to be error free at this point
+    -----------------------------------------------------------------------------------------------------------
+    -- Abstracted data channels, i.e. interface to the data plane as 24-bit data words.
+    -- This is setup as a two channel Avalon Streaming Interface
+    -- See table 17, page 41, of Intel's Avalon� Streaming Interface Specifications
+    -- https://www.altera.com/content/dam/altera-www/global/en_US/pdfs/literature/manual/mnl_avalon_spec.pdf
+    -- Data is being clocked out at the sys_clk rate and valid is asserted only when data is present.  Left and right channels are specified as channel number (0 or 1)
+    -- Data is converted to a W=32 (word length in bits), F=28 (number of fractional bits) before being sent out.
+    -----------------------------------------------------------------------------------------------------------
+    -- Avalon streaming interface from ADC to fabric
+    ad1939_adc1_data    : out   std_logic_vector(word_length - 1 downto 0); -- W=32; F=28; Signed 2's Complement
+    ad1939_adc1_channel : out   std_logic;  -- Left <-> channel 0;  Right <-> channel 1
+    ad1939_adc1_valid   : out   std_logic;                     -- asserted when data is valid
 
-      AD1939_DAC2_data         : in     std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
-      AD1939_DAC2_channel      : in     std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
-      AD1939_DAC2_valid        : in     std_logic;                      -- asserted when data is valid 
-      AD1939_DAC2_error        : in     std_logic_vector(1 downto 0);   -- error channel is ignored, assumed to be error free at this point
+    ad1939_adc2_data    : out   std_logic_vector(word_length - 1 downto 0); -- W=32; F=28; Signed 2's Complement
+    ad1939_adc2_channel : out   std_logic;  -- Left <-> channel 0;  Right <-> channel 1
+    ad1939_adc2_valid   : out   std_logic;                     -- asserted when data is valid
 
-      AD1939_DAC3_data         : in     std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
-      AD1939_DAC3_channel      : in     std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
-      AD1939_DAC3_valid        : in     std_logic;                      -- asserted when data is valid 
-      AD1939_DAC3_error        : in     std_logic_vector(1 downto 0);   -- error channel is ignored, assumed to be error free at this point
+    -- Avalon streaming interface to DAC from fabric
+    ad1939_dac1_data    : in    std_logic_vector(word_length - 1 downto 0); -- W=32; F=28; Signed 2's Complement
+    ad1939_dac1_channel : in    std_logic;  -- Left <-> channel 0;  Right <-> channel 1
+    ad1939_dac1_valid   : in    std_logic;                     -- asserted when data is valid
 
-      AD1939_DAC4_data         : in     std_logic_vector(31 downto 0);  -- W=32; F=28; Signed 2's Complement
-      AD1939_DAC4_channel      : in     std_logic_vector(1 downto 0);   -- Left <-> channel 0;  Right <-> channel 1
-      AD1939_DAC4_valid        : in     std_logic;                      -- asserted when data is valid 
-      AD1939_DAC4_error        : in     std_logic_vector(1 downto 0)   -- error channel is ignored, assumed to be error free at this point
+    ad1939_dac2_data    : in    std_logic_vector(word_length - 1 downto 0); -- W=32; F=28; Signed 2's Complement
+    ad1939_dac2_channel : in    std_logic;  -- Left <-> channel 0;  Right <-> channel 1
+    ad1939_dac2_valid   : in    std_logic;                     -- asserted when data is valid
+
+    ad1939_dac3_data    : in    std_logic_vector(word_length - 1 downto 0); -- W=32; F=28; Signed 2's Complement
+    ad1939_dac3_channel : in    std_logic;  -- Left <-> channel 0;  Right <-> channel 1
+    ad1939_dac3_valid   : in    std_logic;                     -- asserted when data is valid
+
+    ad1939_dac4_data    : in    std_logic_vector(word_length - 1 downto 0); -- W=32; F=28; Signed 2's Complement
+    ad1939_dac4_channel : in    std_logic;  -- Left <-> channel 0;  Right <-> channel 1
+    ad1939_dac4_valid   : in    std_logic                     -- asserted when data is valid
+  );
+end entity ad1939_hps_audio_research;
+
+architecture behavioral of ad1939_hps_audio_research is
+
+  --------------------------------------------------------------
+  -- Intel/Altera component to convert serial data to parallel
+  --------------------------------------------------------------
+
+  component serial2parallel_32bits is
+    port (
+      clock   : in    std_logic;
+      shiftin : in    std_logic;
+      q       : out   std_logic_vector(31 downto 0)
     );
-end AD1939_hps_audio_research;
+  end component;
 
-architecture behavioral of AD1939_hps_audio_research is
+  --------------------------------------------------------------
+  -- Intel/Altera component to convert parallel data to serial
+  --------------------------------------------------------------
 
-    --------------------------------------------------------------
-    -- Intel/Altera component to convert serial data to parallel
-    --------------------------------------------------------------
-    component Serial2Parallel_32bits
-        PORT
-        (
-            clock           : IN STD_LOGIC ;
-            shiftin         : IN STD_LOGIC ;
-            q               : OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
-        );
-    end component;
+  component parallel2serial_32bits is
+    port (
+      clock    : in    std_logic;
+      data     : in    std_logic_vector(31 downto 0);
+      load     : in    std_logic;
+      shiftout : out   std_logic
+    );
+  end component;
 
-    --------------------------------------------------------------
-    -- Intel/Altera component to convert parallel data to serial
-    --------------------------------------------------------------
-    component Parallel2Serial_32bits
-        PORT
-        (
-            clock           : IN STD_LOGIC ;
-            data            : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
-            load            : IN STD_LOGIC ;
-            shiftout        : OUT STD_LOGIC 
-        );
-    end component;
-    
-    
-    ---------------------------------------------------------------------------
-    -- State Machine states to implement Avalon streaming with valid signal
-    -- See I2S-Justified Mode in Figure 23 on page 21 of AD1939 data sheet.
-    ---------------------------------------------------------------------------
-   type state_type is (state_left_wait, state_left_capture, state_left_valid, state_right_wait, state_right_capture, state_right_valid); 
-   signal state : state_type;
-    
-    
-    --------------------------------------------------------------
-    -- Internal Signals
-    --------------------------------------------------------------
-    -- ADC signals
-    signal SregOut_ADC1             : std_logic_vector(31 downto 0);
-    signal SregOut_ADC1_28          : std_logic_vector(27 downto 0);
-    signal ADC1_data                : std_logic_vector(31 downto 0);
-    
-    signal SregOut_ADC2             : std_logic_vector(31 downto 0);
-    signal SregOut_ADC2_28          : std_logic_vector(27 downto 0);
-    signal ADC2_data                : std_logic_vector(31 downto 0);
-    
-    -- DAC signals
-    signal DAC1_data_left           : std_logic_vector(23 downto 0);
-    signal DAC1_data_right          : std_logic_vector(23 downto 0);
-    signal AD1939_DAC_DSDATA1_left  : std_logic;
-    signal AD1939_DAC_DSDATA1_right : std_logic;
-    
-    signal DAC2_data_left           : std_logic_vector(23 downto 0);
-    signal DAC2_data_right          : std_logic_vector(23 downto 0);
-    signal AD1939_DAC_DSDATA2_left  : std_logic;
-    signal AD1939_DAC_DSDATA2_right : std_logic;  
-    
-    signal DAC3_data_left           : std_logic_vector(23 downto 0);
-    signal DAC3_data_right          : std_logic_vector(23 downto 0);
-    signal AD1939_DAC_DSDATA3_left  : std_logic;
-    signal AD1939_DAC_DSDATA3_right : std_logic; 
-    
-    signal DAC4_data_left           : std_logic_vector(23 downto 0);
-    signal DAC4_data_right          : std_logic_vector(23 downto 0);
-    signal AD1939_DAC_DSDATA4_left  : std_logic;
-    signal AD1939_DAC_DSDATA4_right : std_logic;
-    
-    -- Register the output
-    signal AD1939_ADC1_valid_r       : std_logic;
-    signal AD1939_ADC1_channel_r     : std_logic_vector(1 downto 0);
-    signal AD1939_ADC2_valid_r       : std_logic;
-    signal AD1939_ADC2_channel_r     : std_logic_vector(1 downto 0);
+  ---------------------------------------------------------------------------
+  -- State Machine states to implement Avalon streaming with valid signal
+  -- See I2S-Justified Mode in Figure 23 on page 21 of AD1939 data sheet.
+  ---------------------------------------------------------------------------
+
+  type state_type is (state_left_wait, state_left_capture, state_left_valid, state_right_wait, state_right_capture, state_right_valid);
+
+  signal state : state_type;
+
+  --------------------------------------------------------------
+  -- Internal Signals
+  --------------------------------------------------------------
+  -- ADC signals
+  signal sregout_adc1    : std_logic_vector(31 downto 0);
+  signal sregout_adc1_24 : std_logic_vector(word_length - 1 downto 0);
+  signal adc1_data       : std_logic_vector(word_length - 1 downto 0);
+
+  signal sregout_adc2    : std_logic_vector(31 downto 0);
+  signal sregout_adc2_24 : std_logic_vector(word_length - 1 downto 0);
+  signal adc2_data       : std_logic_vector(word_length - 1 downto 0);
+
+  -- DAC signals
+  signal dac1_data_left           : std_logic_vector(word_length - 1 downto 0);
+  signal dac1_data_right          : std_logic_vector(word_length - 1 downto 0);
+  signal ad1939_dac_dsdata1_left  : std_logic;
+  signal ad1939_dac_dsdata1_right : std_logic;
+
+  signal dac2_data_left           : std_logic_vector(word_length - 1 downto 0);
+  signal dac2_data_right          : std_logic_vector(word_length - 1 downto 0);
+  signal ad1939_dac_dsdata2_left  : std_logic;
+  signal ad1939_dac_dsdata2_right : std_logic;
+
+  signal dac3_data_left           : std_logic_vector(word_length - 1 downto 0);
+  signal dac3_data_right          : std_logic_vector(word_length - 1 downto 0);
+  signal ad1939_dac_dsdata3_left  : std_logic;
+  signal ad1939_dac_dsdata3_right : std_logic;
+
+  signal dac4_data_left           : std_logic_vector(word_length - 1 downto 0);
+  signal dac4_data_right          : std_logic_vector(word_length - 1 downto 0);
+  signal ad1939_dac_dsdata4_left  : std_logic;
+  signal ad1939_dac_dsdata4_right : std_logic;
+
+  -- Register the output
+  signal ad1939_adc1_valid_r   : std_logic;
+  signal ad1939_adc1_channel_r : std_logic;
+  signal ad1939_adc2_valid_r   : std_logic;
+  signal ad1939_adc2_channel_r : std_logic;
 
 begin
 
-   ----------------------------------------------------------------------------
-   -- The master bit clock from ADC drives the slave bit clock of DAC
-   -- The master framing LR clock fro ADC drives the slave LR clock of DAC
-   -- ADC is set as master for BCLK and LRCLK.  Set in ADC Control 2 Register.  
-   -- See Table 25 on page 28 of AD1939 data sheet.
-   ----------------------------------------------------------------------------
-   AD1939_DAC_DBCLK  <= AD1939_ADC_ABCLK;   
-   AD1939_DAC_DLRCLK <= AD1939_ADC_ALRCLK;
-   AD1939_ADC1_error  <= "00";  -- no errors coming from ADC so hardcode Avalon error signal as zero.
-   AD1939_ADC2_error  <= "00";  -- no errors coming from ADC so hardcode Avalon error signal as zero.
+  ----------------------------------------------------------------------------
+  -- The master bit clock from ADC drives the slave bit clock of DAC
+  -- The master framing LR clock fro ADC drives the slave LR clock of DAC
+  -- ADC is set as master for BCLK and LRCLK.  Set in ADC Control 2 Register.
+  -- See Table 25 on page 28 of AD1939 data sheet.
+  ----------------------------------------------------------------------------
+  ad1939_dac_dbclk  <= ad1939_adc_abclk;
+  ad1939_dac_dlrclk <= ad1939_adc_alrclk;
 
-
-   
-   -------------------------------------------------------------
-   -- Convert serial data stream to parallel
-   -------------------------------------------------------------
-   S2P_ADC1 : Serial2Parallel_32bits PORT MAP (
-        clock           => AD1939_ADC_ABCLK,   -- serial bit clock
-        shiftin         => AD1939_ADC_ASDATA1, -- serial data in
-        q               => SregOut_ADC1        -- parallel data out
+  -------------------------------------------------------------
+  -- Convert serial data stream to parallel
+  -------------------------------------------------------------
+  s2p_adc1 : serial2parallel_32bits
+    port map (
+      clock   => ad1939_adc_abclk,
+      shiftin => ad1939_adc_asdata1,
+      q       => sregout_adc1
     );
-    
-    
-    S2P_ADC2 : Serial2Parallel_32bits PORT MAP (
-        clock           => AD1939_ADC_ABCLK,   -- serial bit clock
-        shiftin         => AD1939_ADC_ASDATA2, -- serial data in
-        q               => SregOut_ADC2        -- parallel data out
+
+  s2p_adc2 : serial2parallel_32bits
+    port map (
+      clock   => ad1939_adc_abclk,
+      shiftin => ad1939_adc_asdata2,
+      q       => sregout_adc2
     );
-    
-   -------------------------------------------------------------
-   -- Get the 24-bits with a SDATA delay of 1 (SDATA delay set in ADC Control 1 Register; See Table 24 page 27 of AD1939 data sheet) 
-   -- Then:  1. Add 4 more fractional bits to get a word that is W=28, F=28
-   --        2. Sign extend to get a word that is W=32, F=28
-   -------------------------------------------------------------    
-    SregOut_ADC1_28  <= SregOut_ADC1(30 downto 7) & "0000";                                   -- grab 24 parallel bits and append 4 fractional bits
-    ADC1_data        <= std_logic_vector(resize(signed(SregOut_ADC1_28), ADC1_data'length));  -- sign extend to W=32, the data format that is streamed to fabric
 
-    SregOut_ADC2_28  <= SregOut_ADC2(30 downto 7) & "0000";                                   -- grab 24 parallel bits and append 4 fractional bits
-    ADC2_data        <= std_logic_vector(resize(signed(SregOut_ADC2_28), ADC2_data'length));  -- sign extend to W=32, the data format that is streamed to fabric
+  -------------------------------------------------------------
+  -- Get the 24-bits with a SDATA delay of 1 (SDATA delay set in ADC Control 1 Register; See Table 24 page 27 of AD1939 data sheet)
+  sregout_adc1_24 <= sregout_adc1(30 downto 7); 
+  sregout_adc2_24 <= sregout_adc2(30 downto 7); 
 
-    --------------------------------------------------------------
-    -- State Machine to implement Avalon streaming
-    -- Logic to advance to the next state
-    --------------------------------------------------------------
-   process (sys_clk, sys_reset)
-   begin
-         if sys_reset = '1' then
-               state <= state_left_wait;    
-         elsif (rising_edge(sys_clk)) then
-               case state is
-                     ---------------------------------------------
-                     -- left 
-                     ---------------------------------------------                     
-                     when state_left_wait =>
-                           if AD1939_ADC_ALRCLK = '0' then       -- capture left data when ALRCK goes low
-                                 state <= state_left_capture;   
-                           else
-                                 state <= state_left_wait;
-                           end if;  
-                     when state_left_capture =>                  -- state to capture data
-                           state <= state_left_valid;  
-                     when state_left_valid =>                    -- state to generate valid signal
-                           state <= state_right_wait;
-                     ---------------------------------------------
-                     -- right
-                     ---------------------------------------------                     
-                     when state_right_wait =>
-                           if AD1939_ADC_ALRCLK = '1' then       -- capture right data when ALRCK goes high
-                                 state <= state_right_capture;
-                           else
-                                 state <= state_right_wait;
-                           end if;  
-                     when state_right_capture =>                 -- state to capture data
-                           state <= state_right_valid;  
-                     when state_right_valid =>
-                           state <= state_left_wait;             -- state to generate valid signal                           
-                     ---------------------------------------------
-                     -- catch all
-                     ---------------------------------------------
-                     when others =>
-                           state <= state_left_wait;
-               end case;
-         end if;
-   end process;
+  --------------------------------------------------------------
+  -- State Machine to implement Avalon streaming
+  -- Logic to advance to the next state
+  --------------------------------------------------------------
+  process (sys_clk, sys_reset) is
+  begin
 
-    --------------------------------------------------------------
-    -- State Machine to implement Avalon streaming
-    -- Generate Avalon streaming signals
-    --------------------------------------------------------------
-   process (sys_clk)
-   begin
-         if (rising_edge(sys_clk)) then
-               AD1939_ADC1_valid_r         <= '0';    -- default behavior is valid low  (signifies no data)
-               AD1939_ADC1_channel_r       <= "11";   -- default channel number is 3    (signifies no data)
+    if (sys_reset = '1') then
+      state <= state_left_wait;
+    elsif (sys_clk'event and sys_clk = '1') then
 
-               case state is
-                     ---------------------------------------------
-                     -- Get left sample
-                     ---------------------------------------------                     
-                     when state_left_wait =>   
-                     when state_left_capture =>
-                            AD1939_ADC1_data          <= ADC1_data;                     -- send out data in W=32, F=28 format
-                            AD1939_ADC2_data          <= ADC2_data;                     -- send out data in W=32, F=28 format
-                     when state_left_valid =>
-                            AD1939_ADC1_valid_r         <= '1';                           -- valid signal
-                            AD1939_ADC1_channel_r       <= "00";                          -- left channel is channel 0
-                            AD1939_ADC2_valid_r         <= '1';                           -- valid signal
-                            AD1939_ADC2_channel_r       <= "00";                          -- left channel is channel 0
-                     ---------------------------------------------
-                     -- Get right sample
-                     ---------------------------------------------                     
-                     when state_right_wait =>   
-                     when state_right_capture =>
-                            AD1939_ADC1_data          <= ADC1_data;                     -- send out data in W=32, F=28 format
-                            AD1939_ADC2_data          <= ADC2_data;                     -- send out data in W=32, F=28 format
+      case state is
 
-                     when state_right_valid =>
-                            AD1939_ADC1_valid_r         <= '1';                           -- valid signal
-                            AD1939_ADC1_channel_r       <= "01";                          -- right channel is channel 1
-                            AD1939_ADC2_valid_r         <= '1';                           -- valid signal
-                            AD1939_ADC2_channel_r       <= "01";                          -- right channel is channel 1
+        ---------------------------------------------
+        -- left
+        ---------------------------------------------
+        when state_left_wait =>
+          if (ad1939_adc_alrclk = '0') then -- capture left data when ALRCK goes low
+            state <= state_left_capture;
+          else
+            state <= state_left_wait;
+          end if;
+        when state_left_capture =>          -- state to capture data
+          state <= state_left_valid;
+        when state_left_valid =>            -- state to generate valid signal
+          state <= state_right_wait;
+        ---------------------------------------------
+        -- right
+        ---------------------------------------------
+        when state_right_wait =>
+          if (ad1939_adc_alrclk = '1') then -- capture right data when ALRCK goes high
+            state <= state_right_capture;
+          else
+            state <= state_right_wait;
+          end if;
+        when state_right_capture =>         -- state to capture data
+          state <= state_right_valid;
+        when state_right_valid =>
+          state <= state_left_wait;         -- state to generate valid signal
+        ---------------------------------------------
+        -- catch all
+        ---------------------------------------------
+        when others =>
+          state <= state_left_wait;
 
-                     when others =>
-                           -- do nothing
-               end case;
-         end if;
-   end process;
+      end case;
 
+    end if;
+
+  end process;
+
+  --------------------------------------------------------------
+  -- State Machine to implement Avalon streaming
+  -- Generate Avalon streaming signals
+  --------------------------------------------------------------
+  process (sys_clk) is
+  begin
+
+    if (sys_clk'event and sys_clk = '1') then
+      ad1939_adc1_valid_r   <= '0';  -- default behavior is valid low  (signifies no data)
+
+      case state is
+
+        ---------------------------------------------
+        -- Get left sample
+        ---------------------------------------------
+        when state_left_wait =>
+        when state_left_capture =>
+          ad1939_adc1_data <= adc1_data; -- send out data in W=32, F=28 format
+          ad1939_adc2_data <= adc2_data; -- send out data in W=32, F=28 format
+        when state_left_valid =>
+          ad1939_adc1_valid_r   <= '1';  -- valid signal
+          ad1939_adc1_channel_r <= '0'; -- left channel is channel 0
+          ad1939_adc2_valid_r   <= '1';  -- valid signal
+          ad1939_adc2_channel_r <= '0'; -- left channel is channel 0
+        ---------------------------------------------
+        -- Get right sample
+        ---------------------------------------------
+        when state_right_wait =>
+        when state_right_capture =>
+          ad1939_adc1_data <= adc1_data; -- send out data in W=32, F=28 format
+          ad1939_adc2_data <= adc2_data; -- send out data in W=32, F=28 format
+
+        when state_right_valid =>
+          ad1939_adc1_valid_r   <= '1';  -- valid signal
+          ad1939_adc1_channel_r <= '1'; -- right channel is channel 1
+          ad1939_adc2_valid_r   <= '1';  -- valid signal
+          ad1939_adc2_channel_r <= '1'; -- right channel is channel 1
+
+        when others =>
+          -- do nothing
+
+      end case;
+
+    end if;
+
+  end process;
 
   -------------------------------------------------------------
   -- Capture Avalon Streaming data that is to be sent to DAC1
   -- The streaming data is assumed to be normalized.
   -------------------------------------------------------------
-  process (sys_clk)
-    begin
-      if (rising_edge(sys_clk)) then
-        if AD1939_DAC1_valid  = '1' then  -- data has arrived
-          case AD1939_DAC1_channel is
-            when "00" => DAC1_data_left  <= AD1939_DAC1_data(27 downto 4);  -- grab 24 bits out of the left channel that is W=32, F=28
-            when "01" => DAC1_data_right <= AD1939_DAC1_data(27 downto 4);  -- grab 24 bits out of the right channel that is W=32, F=28
-            when others =>                                                 -- do nothing
-          end case;
-        end if;
+  process (sys_clk) is
+  begin
+
+    if (sys_clk'event and sys_clk = '1') then
+      if (ad1939_dac1_valid  = '1') then -- data has arrived
+
+        case ad1939_dac1_channel is
+
+          when '0' =>
+            dac1_data_left <= ad1939_dac1_data; 
+          when '1' =>
+            dac1_data_right <= ad1939_dac1_data; 
+          when others =>                                      -- do nothing
+
+        end case;
+
       end if;
+    end if;
+
   end process;
 
-  process (sys_clk)
-    begin
-      if (rising_edge(sys_clk)) then
-        if AD1939_DAC2_valid  = '1' then  -- data has arrived
-          case AD1939_DAC2_channel is
-            when "00" => DAC2_data_left  <= AD1939_DAC2_data(27 downto 4);  -- grab 24 bits out of the left channel that is W=32, F=28
-            when "01" => DAC2_data_right <= AD1939_DAC2_data(27 downto 4);  -- grab 24 bits out of the right channel that is W=32, F=28
-            when others =>                                                 -- do nothing
-          end case;
-        end if;
+  process (sys_clk) is
+  begin
+
+    if (sys_clk'event and sys_clk = '1') then
+      if (ad1939_dac2_valid  = '1') then -- data has arrived
+
+        case ad1939_dac2_channel is
+
+          when '0' =>
+            dac2_data_left <= ad1939_dac2_data;
+          when '1' =>
+            dac2_data_right <= ad1939_dac2_data;
+          when others =>                                      -- do nothing
+
+        end case;
+
       end if;
+    end if;
+
   end process;
 
-  process (sys_clk)
-    begin
-      if (rising_edge(sys_clk)) then
-        if AD1939_DAC3_valid  = '1' then  -- data has arrived
-          case AD1939_DAC3_channel is
-            when "00" => DAC3_data_left  <= AD1939_DAC3_data(27 downto 4);  -- grab 24 bits out of the left channel that is W=32, F=28
-            when "01" => DAC3_data_right <= AD1939_DAC3_data(27 downto 4);  -- grab 24 bits out of the right channel that is W=32, F=28
-            when others =>                                                 -- do nothing
-          end case;
-        end if;
+  process (sys_clk) is
+  begin
+
+    if (sys_clk'event and sys_clk = '1') then
+      if (ad1939_dac3_valid  = '1') then -- data has arrived
+
+        case ad1939_dac3_channel is
+
+          when '0' =>
+            dac3_data_left <= ad1939_dac3_data;
+          when '1' =>
+            dac3_data_right <= ad1939_dac3_data;
+          when others =>                                      -- do nothing
+
+        end case;
+
       end if;
+    end if;
+
   end process;
-  
-  process (sys_clk)
-    begin
-      if (rising_edge(sys_clk)) then
-        if AD1939_DAC4_valid  = '1' then  -- data has arrived
-          case AD1939_DAC4_channel is
-            when "00" => DAC4_data_left  <= AD1939_DAC4_data(27 downto 4);  -- grab 24 bits out of the left channel that is W=32, F=28
-            when "01" => DAC4_data_right <= AD1939_DAC4_data(27 downto 4);  -- grab 24 bits out of the right channel that is W=32, F=28
-            when others =>                                                 -- do nothing
-          end case;
-        end if;
+
+  process (sys_clk) is
+  begin
+
+    if (sys_clk'event and sys_clk = '1') then
+      if (ad1939_dac4_valid  = '1') then -- data has arrived
+
+        case ad1939_dac4_channel is
+
+          when '0' =>
+            dac4_data_left <= ad1939_dac4_data;
+          when '1' =>
+            dac4_data_right <= ad1939_dac4_data;
+          when others =>                                      -- do nothing
+
+        end case;
+
       end if;
+    end if;
+
   end process;
-  -------------------------------------------------------------
-  -- DAC1 Left
-  -------------------------------------------------------------
-  P2S_DAC1_left : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC1_data_left & "0000000",          -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => AD1939_ADC_ALRCLK,                     -- load: loads when high, component performs shift operation when low.  LRCLK -> Left Low so start shifting when LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA1_left
-  );
 
   -------------------------------------------------------------
-  -- DAC1 Right
+  -- dac1 left
   -------------------------------------------------------------
-  P2S_DAC1_right : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC1_data_right & "0000000",         -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => not AD1939_ADC_ALRCLK,                         -- load: loads when high, component performs shift operation when low.  LRCLK -> Right High so start shifting when not LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA1_right
-  );
-    
-  -------------------------------------------------------------
-  -- DAC2 Left
-  -------------------------------------------------------------
-  P2S_DAC2_left : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC2_data_left & "0000000",          -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => AD1939_ADC_ALRCLK,                     -- load: loads when high, component performs shift operation when low.  LRCLK -> Left Low so start shifting when LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA2_left
-  );
+  p2s_dac1_left : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac1_data_left & "0000000",
+      load     => ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata1_left
+    );
 
   -------------------------------------------------------------
-  -- DAC2 Right
+  -- dac1 right
   -------------------------------------------------------------
-  P2S_DAC2_right : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC2_data_right & "0000000",         -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => not AD1939_ADC_ALRCLK,                         -- load: loads when high, component performs shift operation when low.  LRCLK -> Right High so start shifting when not LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA2_right
-  );
-  
-  -------------------------------------------------------------
-  -- DAC3 Left
-  -------------------------------------------------------------
-  P2S_DAC3_left : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC3_data_left & "0000000",          -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => AD1939_ADC_ALRCLK,                     -- load: loads when high, component performs shift operation when low.  LRCLK -> Left Low so start shifting when LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA3_left
-  );
+  p2s_dac1_right : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac1_data_right & "0000000",
+      load     => not ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata1_right
+    );
 
   -------------------------------------------------------------
-  -- DAC3 Right
+  -- dac2 left
   -------------------------------------------------------------
-  P2S_DAC3_right : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC3_data_right & "0000000",         -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => not AD1939_ADC_ALRCLK,                         -- load: loads when high, component performs shift operation when low.  LRCLK -> Right High so start shifting when not LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA3_right
-  );
-  
-  -------------------------------------------------------------
-  -- DAC4 Left
-  -------------------------------------------------------------
-  P2S_DAC4_left : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC4_data_left & "0000000",          -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => AD1939_ADC_ALRCLK,                     -- load: loads when high, component performs shift operation when low.  LRCLK -> Left Low so start shifting when LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA4_left
-  );
+  p2s_dac2_left : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac2_data_left & "0000000",
+      load     => ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata2_left
+    );
 
   -------------------------------------------------------------
-  -- DAC4 Right
+  -- dac2 right
   -------------------------------------------------------------
-  P2S_DAC4_right : Parallel2Serial_32bits PORT MAP (
-    clock           => AD1939_ADC_ABCLK,
-    data            => '0' & DAC4_data_right & "0000000",         -- Insert the 24-bits with a SDATA delay of 1 (SDATA delay set in DAC Control 0 Register; See Table 18 page 25 of AD1939 data sheet).
-    load            => not AD1939_ADC_ALRCLK,                         -- load: loads when high, component performs shift operation when low.  LRCLK -> Right High so start shifting when not LRCK goes low
-    shiftout        => AD1939_DAC_DSDATA4_right
-  );
-  
-   ------------------------------------------------------------------
-   -- Interleave the left/right serial data that goes out to the DAC
-   ------------------------------------------------------------------
-    process (AD1939_ADC_ALRCLK)
-    begin
-        if (AD1939_ADC_ALRCLK = '0') then
-            AD1939_DAC_DSDATA1 <= AD1939_DAC_DSDATA1_left;  -- When LRCLK is 1, stream out the left channel   (Left-Justified Mode;  See Figure 23 on page 21 of AD1939 data sheet)
-            AD1939_DAC_DSDATA2 <= AD1939_DAC_DSDATA2_left;  -- When LRCLK is 1, stream out the left channel   (Left-Justified Mode;  See Figure 23 on page 21 of AD1939 data sheet)
-            AD1939_DAC_DSDATA3 <= AD1939_DAC_DSDATA3_left;  -- When LRCLK is 1, stream out the left channel   (Left-Justified Mode;  See Figure 23 on page 21 of AD1939 data sheet)
-            AD1939_DAC_DSDATA4 <= AD1939_DAC_DSDATA4_left;  -- When LRCLK is 1, stream out the left channel   (Left-Justified Mode;  See Figure 23 on page 21 of AD1939 data sheet)
-        else
-            AD1939_DAC_DSDATA1 <= AD1939_DAC_DSDATA1_right;
-            AD1939_DAC_DSDATA2 <= AD1939_DAC_DSDATA2_right;
-            AD1939_DAC_DSDATA3 <= AD1939_DAC_DSDATA3_right;
-            AD1939_DAC_DSDATA4 <= AD1939_DAC_DSDATA4_right;
-        end if;
-    end process;
- 
+  p2s_dac2_right : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac2_data_right & "0000000",
+      load     => not ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata2_right
+    );
+
+  -------------------------------------------------------------
+  -- dac3 left
+  -------------------------------------------------------------
+  p2s_dac3_left : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac3_data_left & "0000000",
+      load     => ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata3_left
+    );
+
+  -------------------------------------------------------------
+  -- dac3 right
+  -------------------------------------------------------------
+  p2s_dac3_right : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac3_data_right & "0000000",
+      load     => not ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata3_right
+    );
+
+  -------------------------------------------------------------
+  -- dac4 left
+  -------------------------------------------------------------
+  p2s_dac4_left : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac4_data_left & "0000000",
+      load     => ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata4_left
+    );
+
+  -------------------------------------------------------------
+  -- dac4 right
+  -------------------------------------------------------------
+  p2s_dac4_right : parallel2serial_32bits
+    port map (
+      clock    => ad1939_adc_abclk,
+      data     => '0' & dac4_data_right & "0000000",
+      load     => not ad1939_adc_alrclk,
+      shiftout => ad1939_dac_dsdata4_right
+    );
+
+  ------------------------------------------------------------------
+  -- Interleave the left/right serial data that goes out to the DAC
+  ------------------------------------------------------------------
+  process (AD1939_ADC_ALRCLK, ad1939_dac_dsdata1_left,
+    ad1939_dac_dsdata1_right, ad1939_dac_dsdata2_left,
+    ad1939_dac_dsdata2_right, ad1939_dac_dsdata3_left,
+    ad1939_dac_dsdata3_right, ad1939_dac_dsdata4_left,
+    ad1939_dac_dsdata4_right) is
+  begin
+
+    if (AD1939_ADC_ALRCLK = '0') then
+      ad1939_dac_dsdata1 <= ad1939_dac_dsdata1_left;
+      ad1939_dac_dsdata2 <= ad1939_dac_dsdata2_left;
+      ad1939_dac_dsdata3 <= ad1939_dac_dsdata3_left;
+      ad1939_dac_dsdata4 <= ad1939_dac_dsdata4_left;
+    else
+      ad1939_dac_dsdata1 <= ad1939_dac_dsdata1_right;
+      ad1939_dac_dsdata2 <= ad1939_dac_dsdata2_right;
+      ad1939_dac_dsdata3 <= ad1939_dac_dsdata3_right;
+      ad1939_dac_dsdata4 <= ad1939_dac_dsdata4_right;
+    end if;
+
+  end process;
+
   -- Map the output ADC signals to the ports
-  AD1939_ADC1_valid    <= AD1939_ADC1_valid_r;
-  AD1939_ADC1_channel  <= AD1939_ADC1_channel_r;
-  
-  AD1939_ADC2_valid    <= AD1939_ADC2_valid_r;
-  AD1939_ADC2_channel  <= AD1939_ADC2_channel_r;
-  
-end behavioral;
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+  ad1939_adc1_valid   <= ad1939_adc1_valid_r;
+  ad1939_adc1_channel <= ad1939_adc1_channel_r;
+
+  ad1939_adc2_valid   <= ad1939_adc2_valid_r;
+  ad1939_adc2_channel <= ad1939_adc2_channel_r;
+
+end architecture behavioral;
