@@ -22,7 +22,7 @@
 --                               c.  ADC set as Master
 --                               d.  DAC set as Slave
 --
--- Target Device(s): Terasic D1E0-Nano Board
+-- Target Device(s): Audio Blade (Arria 10 FPGA)
 -- Tool versions:    Quartus Prime 18.0
 --
 --
