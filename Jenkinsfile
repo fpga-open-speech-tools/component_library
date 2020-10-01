@@ -8,15 +8,14 @@ pipeline
             agent {label 'Ubuntu_20.04.1'}
             stages 
             {
-                stage('Checkout')
+                stage('Clone Frost Linux-SoCFPGA Repo')
                 {
                     steps
                     {
-                        //checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'b27e7477-aab1-4f4e-a05c-23cd05d217ee', url: 'https://github.com/fpga-open-speech-tools/component_library.git']]])
                         sh 'git clone https://github.com/fpga-open-speech-tools/linux-socfpga.git;'
                     }
                 }
-                stage('Configure Linux Kernel')
+                stage('Configure Linux Kernel Build Env.')
                 {
                     steps
                     {   dir("linux-socfpga")
@@ -26,16 +25,59 @@ pipeline
                         }
                     }
                 }
-                stage('AD1939 LKM')
+                stage('Build LKMs')
                 {
-                    steps
-                    {   dir("ad1939")
+                    parallel
+                    {
+                        stage('AD1939 LKM')
                         {
-                            sh 'make;'
-                            archiveArtifacts artifacts: '*.ko', fingerprint: true 
+                            steps
+                            {   dir("ad1939")
+                                {
+                                    sh 'make;'
+                                    archiveArtifacts artifacts: '*.ko', fingerprint: true 
+                                }
+                            }
+                        }
+                        stage('AD7768 LKM')
+                        {
+                            steps
+                            {   dir("ad7768")
+                                {
+                                    sh 'make;'
+                                    archiveArtifacts artifacts: '*.ko', fingerprint: true 
+                                }
+                            }
+                        }
+                        stage('PGA2505 LKM')
+                        {
+                            steps
+                            {   dir("pga2505")
+                                {
+                                    sh 'make;'
+                                    archiveArtifacts artifacts: '*.ko', fingerprint: true 
+                                }
+                            }
+                        }
+                        stage('TPA6160A2 LKM')
+                        {
+                            steps
+                            {   dir("tpa613a2")
+                                {
+                                    sh 'make;'
+                                    archiveArtifacts artifacts: '*.ko', fingerprint: true 
+                                }
+                            }
                         }
                     }
                 }
+                stage('Cleanup')
+                {
+                    steps
+                    {
+                        deleteDir()
+                    }
+                } 
             }
         }
     }
