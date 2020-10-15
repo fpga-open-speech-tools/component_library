@@ -308,7 +308,6 @@ begin
       when idle => 
         -- Reset the counters and signal the component is no longer busy
         bit_counter   <= 0;
-        mic_counter <= 0;
         busy <= '0';
         
       when load_header =>
