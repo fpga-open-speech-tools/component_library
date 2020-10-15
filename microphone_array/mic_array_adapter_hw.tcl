@@ -23,6 +23,7 @@ set_module_property NAME mic_array_adapter
 set_module_property VERSION 1.0
 set_module_property INTERNAL false
 set_module_property OPAQUE_ADDRESS_MAP true
+set_module_property GROUP "FPGA Open Speech Tools"
 set_module_property AUTHOR ""
 set_module_property DISPLAY_NAME mic_array_adapter
 set_module_property INSTANTIATE_IN_SYSTEM_MODULE true
