@@ -21,7 +21,7 @@ pipeline
                             }
                             steps 
                             {
-                                build job: 'Build Device Tree'
+                                build job: 'Frost Build Base Device Tree'
                             }
                         }
                     }
