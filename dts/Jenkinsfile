@@ -12,14 +12,20 @@ pipeline
                 {
                     steps
                     {   
-                        sh 'make'
+                        dir("dts")
+                        {
+                            sh 'make'
+                        }
                     }
                 }
                 stage('Archive')
                 {
                     steps
                     {
-                        archiveArtifacts artifacts: 'audiomini.dtb', fingerprint: true
+                        dir("dts")
+                        {
+                            archiveArtifacts artifacts: 'audiomini.dtb', fingerprint: true
+                        }
                     }
                 }
                 stage('Cleanup')
