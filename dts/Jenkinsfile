@@ -1,0 +1,38 @@
+pipeline
+{
+    agent none
+    stages
+    {
+        stage ('Ubuntu_20.04.1')
+        {
+            agent {label 'Ubuntu_20.04.1'}
+            stages 
+            {
+                stage('Build Base Device Tree Blob')
+                {
+                    steps
+                    {   
+                        sh 'make'
+                    }
+                }
+                stage('Archive')
+                {
+                    steps
+                    {
+                        archiveArtifacts artifacts: 'audiomini.dtb', fingerprint: true
+                    }
+                }
+                stage('Cleanup')
+                {
+                    steps
+                    {
+                        deleteDir()
+                        dir("${workspace}@tmp") {
+                            deleteDir()
+                        }
+                    }
+                } 
+            }
+        }
+    }
+}
