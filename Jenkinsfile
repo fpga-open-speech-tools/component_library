@@ -12,7 +12,7 @@ pipeline
                 {
                     parallel
                     {
-                        stage('Frost Edge')
+                        stage('Build Base Device Tree')
                         {
                             when {
                                 anyOf {

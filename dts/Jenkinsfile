@@ -18,7 +18,7 @@ pipeline
                         }
                     }
                 }
-                stage('Archive')
+                stage('Archive DTB')
                 {
                     steps
                     {
