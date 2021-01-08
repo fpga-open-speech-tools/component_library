@@ -20,8 +20,8 @@ pipeline
                     steps
                     {   dir("linux-socfpga")
                         {
-                            sh 'make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig'
-                            sh 'make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-'
+                            sh 'make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig;'
+                            sh 'make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-;'
                         }
                     }
                 }
@@ -34,6 +34,7 @@ pipeline
                             steps
                             {   dir("ad1939")
                                 {
+                                    sh 'pwd;'
                                     sh 'make;'
                                     archiveArtifacts artifacts: '*.ko', fingerprint: true 
                                 }
