@@ -70,17 +70,26 @@ pipeline
                             }
                         }
                     }
+<<<<<<< HEAD
                 }
                 stage('Cleanup')
+=======
+                    stage('Cleanup')
+                    {
+                        steps
+>>>>>>> 764a58315c003afcb6761d66c78fa5785e14c494
                         {
-                            steps
-                            {
+                            deleteDir()
+                            dir("${workspace}@tmp") {
                                 deleteDir()
-                                dir("${workspace}@tmp") {
-                                    deleteDir()
-                                }
                             }
+<<<<<<< HEAD
                         } 
+=======
+                        }
+                    } 
+                }
+>>>>>>> 764a58315c003afcb6761d66c78fa5785e14c494
             }
         }
     }
