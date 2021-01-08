@@ -33,9 +33,9 @@ pipeline
                         {
                             steps
                             {   dir("ad1939")
-                                {   sh 'll'
+                                {   sh 'ls -al'
                                     sh 'pwd;'
-                                    sh 'll ..'
+                                    sh 'ls -al ..'
                                     sh 'make;'
                                     archiveArtifacts artifacts: '*.ko', fingerprint: true 
                                 }
