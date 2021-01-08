@@ -12,7 +12,7 @@ pipeline
                 {
                     steps
                     {
-                        sh 'git clone https://github.com/fpga-open-speech-tools/linux-socfpga.git;'
+                        sh 'echo "git clone https://github.com/fpga-open-speech-tools/linux-socfpga.git;"'
                     }
                 }
                 stage('Configure Linux Kernel Build Env.')
@@ -20,8 +20,8 @@ pipeline
                     steps
                     {   dir("linux-socfpga")
                         {
-                            sh 'make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig;'
-                            sh 'make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-;'
+                            sh 'echo "make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig;"'
+                            sh 'echo "make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-;"'
                         }
                     }
                 }
@@ -33,8 +33,9 @@ pipeline
                         {
                             steps
                             {   dir("ad1939")
-                                {
+                                {   sh 'll'
                                     sh 'pwd;'
+                                    sh 'll ..'
                                     sh 'make;'
                                     archiveArtifacts artifacts: '*.ko', fingerprint: true 
                                 }
