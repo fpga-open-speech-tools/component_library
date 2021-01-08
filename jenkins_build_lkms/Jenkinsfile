@@ -73,9 +73,12 @@ pipeline
                 }
                 stage('Cleanup')
                 {
-                    deleteDir()
-                    dir("${workspace}@tmp") {
+                    steps 
+                    {
                         deleteDir()
+                        dir("${workspace}@tmp") {
+                            deleteDir()
+                        }
                     }
                 } 
             }
