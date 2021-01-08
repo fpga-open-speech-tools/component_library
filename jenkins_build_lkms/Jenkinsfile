@@ -79,17 +79,17 @@ pipeline
                                 }
                             }
                         }
-                        stage('Cleanup')
-                        {
-                            steps
-                            {
-                                deleteDir()
-                                dir("${workspace}@tmp") {
-                                    deleteDir()
-                                }
-                            }
-                        } 
                     }
+                    stage('Cleanup')
+                    {
+                        steps
+                        {
+                            deleteDir()
+                            dir("${workspace}@tmp") {
+                                deleteDir()
+                            }
+                        }
+                    } 
                 }
             }
         }
