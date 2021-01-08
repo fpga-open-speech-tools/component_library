@@ -15,11 +15,11 @@ pipeline
                             changeset "ad1939/*.vhd"
                             changeset "ad1939/*.tcl"
                         }
+                    }
                     steps 
                     {
                         build job: 'DE10_AudioMini_Passthrough'
                     }
-
                 }
 
                 stage('Check the LKMs')
