@@ -20,8 +20,8 @@ pipeline
                     steps
                     {   dir("linux-socfpga")
                         {
-                            sh 'make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig'
-                            sh 'make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-'
+                            sh 'make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig;'
+                            sh 'make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-;'
                         }
                     }
                 }
@@ -33,7 +33,7 @@ pipeline
                         {
                             steps
                             {   dir("ad1939")
-                                {
+                                {   
                                     sh 'make;'
                                     archiveArtifacts artifacts: '*.ko', fingerprint: true 
                                 }
@@ -69,18 +69,18 @@ pipeline
                                 }
                             }
                         }
-                        stage('Cleanup')
-                        {
-                            steps
-                            {
-                                deleteDir()
-                                dir("${workspace}@tmp") {
-                                    deleteDir()
-                                }
-                            }
-                        } 
                     }
                 }
+                stage('Cleanup')
+                {
+                    steps 
+                    {
+                        deleteDir()
+                        dir("${workspace}@tmp") {
+                            deleteDir()
+                        }
+                    }
+                } 
             }
         }
     }
