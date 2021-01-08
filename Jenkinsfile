@@ -34,7 +34,7 @@ pipeline
                             changeset "tpa613a2/FE_TPA613A2.c"
                         }
                     }
-                    stages
+                    steps
                     {
                         build job: 'Linux_LKMs'
                     }
