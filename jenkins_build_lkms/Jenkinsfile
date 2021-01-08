@@ -8,6 +8,10 @@ pipeline
             agent {label 'Ubuntu_20.04.1'}
             stages 
             {
+                stage ('Is this empty?')
+                {
+                    sh 'ls -al'
+                }
                 stage('Clone Frost Linux-SoCFPGA Repo')
                 {
                     steps
