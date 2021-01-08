@@ -8,19 +8,11 @@ pipeline
             agent {label 'Ubuntu_20.04.1'}
             stages 
             {
-                stage ('Is this empty?')
-                {
-                    steps
-                    {
-                        sh 'ls -al'
-                    }
-                    
-                }
                 stage('Clone Frost Linux-SoCFPGA Repo')
                 {
                     steps
                     {
-                        sh 'echo "git clone https://github.com/fpga-open-speech-tools/linux-socfpga.git;"'
+                        sh 'git clone https://github.com/fpga-open-speech-tools/linux-socfpga.git;'
                     }
                 }
                 stage('Configure Linux Kernel Build Env.')
@@ -28,8 +20,8 @@ pipeline
                     steps
                     {   dir("linux-socfpga")
                         {
-                            sh 'echo "make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig;"'
-                            sh 'echo "make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-;"'
+                            sh 'make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- openspeech_defconfig;'
+                            sh 'make prepare ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-;'
                         }
                     }
                 }
