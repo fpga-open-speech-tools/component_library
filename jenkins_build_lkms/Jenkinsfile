@@ -10,7 +10,11 @@ pipeline
             {
                 stage ('Is this empty?')
                 {
-                    sh 'ls -al'
+                    steps
+                    {
+                        sh 'ls -al'
+                    }
+                    
                 }
                 stage('Clone Frost Linux-SoCFPGA Repo')
                 {
