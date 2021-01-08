@@ -45,6 +45,9 @@ pipeline
                     steps
                     {
                         deleteDir()
+                        dir("${workspace}@tmp") {
+                            deleteDir()
+                        }
                     }
                 } 
             }
