@@ -8,6 +8,16 @@ pipeline
             agent {label 'Ubuntu_20.04.1'}
             stages 
             {
+                stage('Check the AD1939 Driver') 
+                {
+                    when { changeset "ad1939/*"}
+                    steps 
+                    {
+                        build job: 'Q18P0_DE10_AudioMini_Passthrough'
+                    }
+
+                }
+
                 stage('Clone Frost Linux-SoCFPGA Repo')
                 {
                     steps
