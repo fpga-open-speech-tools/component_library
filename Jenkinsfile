@@ -24,8 +24,10 @@ pipeline
 
                 stage('Check the LKMs')
                 {
-                    when {
-                        anyOf {
+                    when 
+                    {
+                        anyOf 
+                        {
                             changeset "ad1939/FE_AD1939.c"
                             changeset "ad7768/FE_AD7768_4.c"
                             changeset "pga2505/FE_PGA2505.c"
