@@ -19,12 +19,12 @@ package require -exact qsys 16.1
 # module FE_Qsys_AD1939_Audio_Research_v1
 # 
 set_module_property DESCRIPTION ""
-set_module_property NAME FE_Qsys_AD1939_Audio_Research_v1
+set_module_property NAME FE_Qsys_AD1939_Audio_Research
 set_module_property VERSION 1.0
 set_module_property INTERNAL false
 set_module_property OPAQUE_ADDRESS_MAP true
 set_module_property AUTHOR ""
-set_module_property DISPLAY_NAME FE_Qsys_AD1939_Audio_Research_v1
+set_module_property DISPLAY_NAME FE_Qsys_AD1939_Audio_Research
 set_module_property INSTANTIATE_IN_SYSTEM_MODULE true
 set_module_property EDITABLE true
 set_module_property REPORT_TO_TALKBACK false
@@ -39,7 +39,7 @@ add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
 set_fileset_property QUARTUS_SYNTH TOP_LEVEL AD1939_hps_audio_research
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
-add_fileset_file AD1939_hps_audio_research_v1.vhd VHDL PATH AD1939_hps_audio_research_v1.vhd TOP_LEVEL_FILE
+add_fileset_file AD1939_hps_audio_research.vhd VHDL PATH AD1939_hps_audio_research.vhd TOP_LEVEL_FILE
 add_fileset_file Parallel2Serial_32bits.vhd VHDL PATH ../serdes/Parallel2Serial_32bits.vhd
 add_fileset_file Serial2Parallel_32bits.vhd VHDL PATH ../serdes/Serial2Parallel_32bits.vhd
 add_fileset_file ad1939_pkg.vhd VHDL Path ad1939_pkg.vhd
