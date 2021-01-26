@@ -19,12 +19,12 @@ package require -exact qsys 16.1
 # module FE_Qsys_AD1939_Audio_Research_v1
 # 
 set_module_property DESCRIPTION ""
-set_module_property NAME FE_Qsys_AD1939_Audio_Research_v1
+set_module_property NAME FE_Qsys_AD1939_Audio_Research
 set_module_property VERSION 1.0
 set_module_property INTERNAL false
 set_module_property OPAQUE_ADDRESS_MAP true
 set_module_property AUTHOR ""
-set_module_property DISPLAY_NAME FE_Qsys_AD1939_Audio_Research_v1
+set_module_property DISPLAY_NAME FE_Qsys_AD1939_Audio_Research
 set_module_property INSTANTIATE_IN_SYSTEM_MODULE true
 set_module_property EDITABLE true
 set_module_property REPORT_TO_TALKBACK false
@@ -39,9 +39,10 @@ add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
 set_fileset_property QUARTUS_SYNTH TOP_LEVEL AD1939_hps_audio_research
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
-add_fileset_file AD1939_hps_audio_research_v1.vhd VHDL PATH AD1939_hps_audio_research_v1.vhd TOP_LEVEL_FILE
+add_fileset_file AD1939_hps_audio_research.vhd VHDL PATH AD1939_hps_audio_research.vhd TOP_LEVEL_FILE
 add_fileset_file Parallel2Serial_32bits.vhd VHDL PATH ../serdes/Parallel2Serial_32bits.vhd
 add_fileset_file Serial2Parallel_32bits.vhd VHDL PATH ../serdes/Serial2Parallel_32bits.vhd
+add_fileset_file ad1939_pkg.vhd VHDL Path ad1939_pkg.vhd
 
 
 # 
@@ -60,10 +61,10 @@ add_fileset_file Serial2Parallel_32bits.vhd VHDL PATH ../serdes/Serial2Parallel_
 add_interface Headphone_Out avalon_streaming end
 set_interface_property Headphone_Out associatedClock sys_clk
 set_interface_property Headphone_Out associatedReset sys_reset
-set_interface_property Headphone_Out dataBitsPerSymbol 32
+set_interface_property Headphone_Out dataBitsPerSymbol 24
 set_interface_property Headphone_Out errorDescriptor ""
 set_interface_property Headphone_Out firstSymbolInHighOrderBits true
-set_interface_property Headphone_Out maxChannel 3
+set_interface_property Headphone_Out maxChannel 1
 set_interface_property Headphone_Out readyLatency 0
 set_interface_property Headphone_Out ENABLED true
 set_interface_property Headphone_Out EXPORT_OF ""
@@ -71,9 +72,8 @@ set_interface_property Headphone_Out PORT_NAME_MAP ""
 set_interface_property Headphone_Out CMSIS_SVD_VARIABLES ""
 set_interface_property Headphone_Out SVD_ADDRESS_GROUP ""
 
-add_interface_port Headphone_Out AD1939_DAC1_channel channel Input 2
-add_interface_port Headphone_Out AD1939_DAC1_data data Input 32
-add_interface_port Headphone_Out AD1939_DAC1_error error Input 2
+add_interface_port Headphone_Out AD1939_DAC1_channel channel Input 1
+add_interface_port Headphone_Out AD1939_DAC1_data data Input 24
 add_interface_port Headphone_Out AD1939_DAC1_valid valid Input 1
 
 
@@ -83,10 +83,10 @@ add_interface_port Headphone_Out AD1939_DAC1_valid valid Input 1
 add_interface Line_Out avalon_streaming end
 set_interface_property Line_Out associatedClock sys_clk
 set_interface_property Line_Out associatedReset sys_reset
-set_interface_property Line_Out dataBitsPerSymbol 32
+set_interface_property Line_Out dataBitsPerSymbol 24
 set_interface_property Line_Out errorDescriptor ""
 set_interface_property Line_Out firstSymbolInHighOrderBits true
-set_interface_property Line_Out maxChannel 3
+set_interface_property Line_Out maxChannel 1
 set_interface_property Line_Out readyLatency 0
 set_interface_property Line_Out ENABLED true
 set_interface_property Line_Out EXPORT_OF ""
@@ -94,9 +94,8 @@ set_interface_property Line_Out PORT_NAME_MAP ""
 set_interface_property Line_Out CMSIS_SVD_VARIABLES ""
 set_interface_property Line_Out SVD_ADDRESS_GROUP ""
 
-add_interface_port Line_Out AD1939_DAC2_channel channel Input 2
-add_interface_port Line_Out AD1939_DAC2_data data Input 32
-add_interface_port Line_Out AD1939_DAC2_error error Input 2
+add_interface_port Line_Out AD1939_DAC2_channel channel Input 1
+add_interface_port Line_Out AD1939_DAC2_data data Input 24
 add_interface_port Line_Out AD1939_DAC2_valid valid Input 1
 
 
@@ -106,10 +105,10 @@ add_interface_port Line_Out AD1939_DAC2_valid valid Input 1
 add_interface XLR1_Out avalon_streaming end
 set_interface_property XLR1_Out associatedClock sys_clk
 set_interface_property XLR1_Out associatedReset sys_reset
-set_interface_property XLR1_Out dataBitsPerSymbol 32
+set_interface_property XLR1_Out dataBitsPerSymbol 24
 set_interface_property XLR1_Out errorDescriptor ""
 set_interface_property XLR1_Out firstSymbolInHighOrderBits true
-set_interface_property XLR1_Out maxChannel 3
+set_interface_property XLR1_Out maxChannel 1
 set_interface_property XLR1_Out readyLatency 0
 set_interface_property XLR1_Out ENABLED true
 set_interface_property XLR1_Out EXPORT_OF ""
@@ -117,9 +116,8 @@ set_interface_property XLR1_Out PORT_NAME_MAP ""
 set_interface_property XLR1_Out CMSIS_SVD_VARIABLES ""
 set_interface_property XLR1_Out SVD_ADDRESS_GROUP ""
 
-add_interface_port XLR1_Out AD1939_DAC3_channel channel Input 2
-add_interface_port XLR1_Out AD1939_DAC3_data data Input 32
-add_interface_port XLR1_Out AD1939_DAC3_error error Input 2
+add_interface_port XLR1_Out AD1939_DAC3_channel channel Input 1
+add_interface_port XLR1_Out AD1939_DAC3_data data Input 24
 add_interface_port XLR1_Out AD1939_DAC3_valid valid Input 1
 
 
@@ -129,10 +127,10 @@ add_interface_port XLR1_Out AD1939_DAC3_valid valid Input 1
 add_interface XLR2_Out avalon_streaming end
 set_interface_property XLR2_Out associatedClock sys_clk
 set_interface_property XLR2_Out associatedReset sys_reset
-set_interface_property XLR2_Out dataBitsPerSymbol 32
+set_interface_property XLR2_Out dataBitsPerSymbol 24
 set_interface_property XLR2_Out errorDescriptor ""
 set_interface_property XLR2_Out firstSymbolInHighOrderBits true
-set_interface_property XLR2_Out maxChannel 3
+set_interface_property XLR2_Out maxChannel 1
 set_interface_property XLR2_Out readyLatency 0
 set_interface_property XLR2_Out ENABLED true
 set_interface_property XLR2_Out EXPORT_OF ""
@@ -140,9 +138,8 @@ set_interface_property XLR2_Out PORT_NAME_MAP ""
 set_interface_property XLR2_Out CMSIS_SVD_VARIABLES ""
 set_interface_property XLR2_Out SVD_ADDRESS_GROUP ""
 
-add_interface_port XLR2_Out AD1939_DAC4_channel channel Input 2
-add_interface_port XLR2_Out AD1939_DAC4_data data Input 32
-add_interface_port XLR2_Out AD1939_DAC4_error error Input 2
+add_interface_port XLR2_Out AD1939_DAC4_channel channel Input 1
+add_interface_port XLR2_Out AD1939_DAC4_data data Input 24
 add_interface_port XLR2_Out AD1939_DAC4_valid valid Input 1
 
 
@@ -152,10 +149,10 @@ add_interface_port XLR2_Out AD1939_DAC4_valid valid Input 1
 add_interface Line_In avalon_streaming start
 set_interface_property Line_In associatedClock sys_clk
 set_interface_property Line_In associatedReset sys_reset
-set_interface_property Line_In dataBitsPerSymbol 32
+set_interface_property Line_In dataBitsPerSymbol 24
 set_interface_property Line_In errorDescriptor ""
 set_interface_property Line_In firstSymbolInHighOrderBits true
-set_interface_property Line_In maxChannel 3
+set_interface_property Line_In maxChannel 1
 set_interface_property Line_In readyLatency 0
 set_interface_property Line_In ENABLED true
 set_interface_property Line_In EXPORT_OF ""
@@ -163,9 +160,8 @@ set_interface_property Line_In PORT_NAME_MAP ""
 set_interface_property Line_In CMSIS_SVD_VARIABLES ""
 set_interface_property Line_In SVD_ADDRESS_GROUP ""
 
-add_interface_port Line_In AD1939_ADC2_channel channel Output 2
-add_interface_port Line_In AD1939_ADC2_data data Output 32
-add_interface_port Line_In AD1939_ADC2_error error Output 2
+add_interface_port Line_In AD1939_ADC2_channel channel Output 1
+add_interface_port Line_In AD1939_ADC2_data data Output 24
 add_interface_port Line_In AD1939_ADC2_valid valid Output 1
 
 
@@ -175,10 +171,10 @@ add_interface_port Line_In AD1939_ADC2_valid valid Output 1
 add_interface Microphone_In avalon_streaming start
 set_interface_property Microphone_In associatedClock sys_clk
 set_interface_property Microphone_In associatedReset sys_reset
-set_interface_property Microphone_In dataBitsPerSymbol 32
+set_interface_property Microphone_In dataBitsPerSymbol 24
 set_interface_property Microphone_In errorDescriptor ""
 set_interface_property Microphone_In firstSymbolInHighOrderBits true
-set_interface_property Microphone_In maxChannel 3
+set_interface_property Microphone_In maxChannel 1
 set_interface_property Microphone_In readyLatency 0
 set_interface_property Microphone_In ENABLED true
 set_interface_property Microphone_In EXPORT_OF ""
@@ -186,9 +182,8 @@ set_interface_property Microphone_In PORT_NAME_MAP ""
 set_interface_property Microphone_In CMSIS_SVD_VARIABLES ""
 set_interface_property Microphone_In SVD_ADDRESS_GROUP ""
 
-add_interface_port Microphone_In AD1939_ADC1_channel channel Output 2
-add_interface_port Microphone_In AD1939_ADC1_data data Output 32
-add_interface_port Microphone_In AD1939_ADC1_error error Output 2
+add_interface_port Microphone_In AD1939_ADC1_channel channel Output 1
+add_interface_port Microphone_In AD1939_ADC1_data data Output 24
 add_interface_port Microphone_In AD1939_ADC1_valid valid Output 1
 
 
