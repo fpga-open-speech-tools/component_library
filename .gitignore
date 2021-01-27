@@ -8,3 +8,5 @@
 Module.symvers
 modules.order
 *.tcl~
+**built-in.a
+**.dtbo
