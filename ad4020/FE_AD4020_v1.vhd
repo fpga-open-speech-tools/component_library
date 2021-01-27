@@ -204,6 +204,7 @@ begin
   
   -- State machine that handles the state transitions 
   process (spi_clk, sys_reset_n)
+    variable held_CNV_one_cycle : boolean := false;
   begin
   
     -- Reset the signals when the system reset is deasserted
@@ -228,7 +229,11 @@ begin
           end if;
           
         when spi_init_load => 
-          state <= spi_write_init_start;
+          if held_CNV_one_cycle then
+            state <= spi_write_init_start;
+          else
+            held_CNV_one_cycle := true;
+          end if;
           
         when spi_write_init_start =>
           if AD4020_spi_busy = '1' then 
