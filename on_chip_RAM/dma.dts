@@ -1,0 +1,16 @@
+/dts-v1/;
+/plugin/;
+
+&base_fpga_region {
+	#address-cells = <2>;
+	#size-cells = <1>;
+	ranges = < 0x00000000 0x00000000 0xc0000000 0x20000000>,
+	<0x00000000 0x00000000 0xc0000000 0x00010000>;
+	
+	dma_test: dma-test@000000000 {
+		compatible = "al,dma-test-1.0", "dev,al-dma-test";
+		reg = <0x00000000 0x00000000 0x00010000>;
+	};
+	
+	
+};
