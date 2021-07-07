@@ -22,6 +22,7 @@
 #include <linux/regmap.h>
 #include <linux/i2c.h>
 
+#include <custom_functions.h>
 
 // Define information about this kernel module
 MODULE_LICENSE("GPL");
@@ -31,13 +32,6 @@ MODULE_VERSION("1.0");
 
 // Index of the first negative value in the look up table below
 #define PN_INDEX 54
-
-struct fixed_num
-{
-    int integer;
-    int fraction;
-    int fraction_len;
-};
 
 // Volume levels defined in Raymond Weber's userspace code (multiplied by ten to elimiate the
 // decimal and with the negative values multiplied by negative one)
@@ -144,9 +138,6 @@ static ssize_t volume_write(struct device *dev, struct device_attribute *attr, c
 static ssize_t volume_read(struct device *dev, struct device_attribute *attr, char *buf);
 
 // Custom function declarations
-char *strcat2(char *dst, char *src);
-uint32_t set_fixed_num(const char *s);
-int fp_to_string(char *buf, uint32_t fp28_num);
 uint8_t find_volume_level(uint32_t fp28_num, uint8_t pn);
 uint32_t decode_volume(uint8_t code);
 
@@ -586,22 +577,12 @@ static ssize_t volume_write(struct device *dev, struct device_attribute *attr, c
       // Shift all the values "left" to remove it
       for (i=0;i<79;i++)
         substring[i] = substring[i+1];
-
-      // Find the fp28 number
-      tempValue = set_fixed_num(substring);
-
-      // Determine the code for the volume level
-      code = find_volume_level(tempValue,0);
     }
-    // Otherwise, 
-    else
-    {
-      // Calculate the fp28 number
-      tempValue = set_fixed_num(substring);
+    // Calculate the fp28 number
+    tempValue = set_fixed_num(substring, 15, true);
 
-      // Determine the code for the volume level
-      code = find_volume_level(tempValue,1);
-    }
+    // Determine the code for the volume level
+    code = find_volume_level(tempValue,1);
 
     // Determine the closest volume level
     tempValue = decode_volume(code);
@@ -619,205 +600,12 @@ static ssize_t volume_read(struct device *dev, struct device_attribute *attr, ch
 {
     fe_TPA613A2_dev_t *devp = (fe_TPA613A2_dev_t *)dev_get_drvdata(dev);
 
-    fp_to_string(buf, devp->volume);
+    fp_to_string(buf, devp->volume, 15, true, 3);
 
     strcat2(buf, "\n");
 
     //Return the length of the buffer so it will print in the console
     return strlen(buf);
-}
-
-char *strcat2(char *dst, char *src)
-{
-    char *cp = dst;
-
-    while (*cp)
-        cp++; /* find end of dst */
-
-    while (( *cp++ = *src++ ) != 0); /* Copy src to end of dst */
-
-    return dst; /* return dst */
-}
-
-/** Convert a string to a fixed point number structure
-    @param s String containing the string to convert to 32F16 representation
-    @return SUCCESS
-
-    @todo This function is really ugly and could be cleaned up to make it clear what is happening....
-*/
-uint32_t set_fixed_num(const char *s)
-{
-    struct fixed_num num = {0, 0, 0};
-    int seen_point = 0;
-    int pointIndex;
-    int i;
-    int ii;
-    int frac_comp;
-    uint32_t acc = 0;
-    char s2[80];
-    int pointsSeen = 0;
-    int charIndex = 0;
-
-    //If no leading 0, add one (eg: .25 -> 0.25)
-    if (s[0] == '.')
-    {
-        s2[0] = '0';
-        charIndex++;
-    }
-
-    //This is a strcpy() to move the data a "const char *" to a "char *" and validate the data
-    for (i = 0; i < strlen(s); i++)
-    {
-        //Make sure the string contains an non-valid char (eg: not a number or a decimal point)
-        if ((s[i] == '.') || (s[i] >= '0' && s[i] <= '9'))
-        {
-            //Copy the data over and increment the pointer
-            s2[charIndex] = s[i];
-            charIndex++;
-        }
-        else
-        {
-            pr_info("Invalid char (c:%c x:%X) in number %s\n", s[i], s[i], s);
-            return 0x00000000;
-        }
-
-        //Count the number of decimals in the string
-        if (s[i] == '.')
-            pointsSeen++;
-    }
-
-    //If multiple decimals points in the number (eg: 1.1.4)
-    if (pointsSeen > 1)
-        pr_info("Invalid number format: %s\n", s);
-
-    //Turn 1 into 1.0
-    //if (pointsSeen == 0)
-    // {
-    //    printk("Adding the decimal...\n");
-    //    s2[i] = char(".");
-    //    s2[i+1] = char("0");
-    //    //strcat2(".0",s2);
-    //    i=i+2;
-    // }
-    //Make sure the string is terminated
-    s2[i] = '\0';
-
-    //Count the fractional digits
-    for (pointIndex = 0; pointIndex < strlen(s2); pointIndex++)
-    {
-        if (s2[pointIndex] == '.')
-            break;
-    }
-
-    //String extend so that the output is accurate
-    while (strlen(s2) - pointIndex < 9)
-        strcat2(s2, "0");
-
-    //Truncate the string if its longer
-    s2[strlen(s2) - pointIndex + 9] = '\0';
-
-    //Covert to fixed point
-    for (i = 0; i < 10; i++)
-    {
-        if (s2[i] == '.')
-        {
-            seen_point = 1;
-            continue;
-        }
-        if (!seen_point)
-        {
-            num.integer *= 10;
-            num.integer += (int)(s2[i] - '0');
-        }
-        else
-        {
-            num.fraction_len++;
-            num.fraction *= 10;
-            num.fraction += (int)(s2[i] - '0');
-        }
-    }
-
-    //Turn the fixed point conversion into binary digits
-    for (ii = 0, frac_comp = 1; ii < num.fraction_len; ii++) frac_comp *= 10;
-    frac_comp /= 2;
-
-    // Get the fractional part (f28 hopefully)
-    for (ii = 0; i <= 36; i++)
-    {
-        if (num.fraction >= frac_comp)
-        {
-            acc |= 0x00000001;
-            num.fraction -= frac_comp;
-        }
-        frac_comp /= 2;
-
-        acc = acc << 1;
-    }
-
-    acc = acc >> 12;
-
-    //Combine the fractional part with the integer
-    acc += num.integer << 16;
-
-    return acc;
-}
-
-/** Function to convert a fp16 to a string representation
-    @todo doesn't handle negative numbers
-*/
-int fp_to_string(char *buf, uint32_t fp28_num)
-{
-    int buf_pos = 0;
-    int i;
-    int fractionPart;
-    //int isNegative = 0;
-    int intPart = 1;
-    int i16 = 0;
-
-    if (fp28_num & 0x80000000)
-    {
-        fp28_num *= -1;
-
-        buf[buf_pos] = '-';
-        buf_pos++;
-    }
-
-    //Convert the integer part
-    i16 = (fp28_num >> 16);
-    while ( (i16 / intPart) > 9)
-    {
-        intPart *= 10;
-    }
-
-    while (intPart > 0)
-    {
-        buf[buf_pos] = (char)((i16 / intPart) + '0');
-        buf_pos++;
-
-        i16 = i16 % intPart;
-        intPart = intPart / 10;
-    }
-
-    //buf[buf_pos] = (char)((fp28_num>>16) + '0');
-    //buf_pos++;
-
-    buf[buf_pos] = '.';
-    buf_pos++;
-
-    //Mask the integer bits and dump 1 bit to make the conversion easier....
-    fractionPart = (0x0000FFFF & fp28_num) >> 1; // 32F27 so that 0-9 can fit in the high 5 bits)
-
-    for (i = 0; i < 8; i++)
-    {
-        fractionPart *= 10;
-        buf[buf_pos] = (fractionPart >> 15) + '0';
-        buf_pos++;
-        fractionPart &= 0x00007FFF;
-    }
-
-    buf[buf_pos] = '\0';
-
-    return 0;
 }
 uint8_t find_volume_level(uint32_t fp28_num, uint8_t pn)
 {

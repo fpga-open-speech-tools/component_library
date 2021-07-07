@@ -1,1 +1,2 @@
+ccflags-y := -I$(src)/../../include
 obj-m := FE_TPA613A2.o
